@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # -*- ruby -*-
 #
-# inplace.rb - edits files in-place through a given filter command
+# inplace.rb - edits files in-place through given filter commands
 #
 # Copyright (c) 2004 Akinori MUSHA
 #
@@ -34,7 +34,7 @@ if RUBY_VERSION < "1.8.0"
   exit 255
 end
 
-RCS_ID = %q$Idaemons: /home/cvs/inplace/inplace.rb,v 1.4 2004/04/08 16:44:38 knu Exp $
+RCS_ID = %q$Idaemons: /home/cvs/inplace/inplace.rb,v 1.5 2004/04/17 09:04:06 knu Exp $
 RCS_REVISION = RCS_ID.split[2]
 MYNAME = File.basename($0)
 
@@ -56,7 +56,7 @@ usage: #{MYNAME} [-Lnstvz] [-b SUFFIX] -e COMMANDLINE [ ...]
   EOF
 
   banner = <<-"EOF"
-#{MYNAME} rev.#{RCS_REVISION} - edits files in-place through a given filter command
+#{MYNAME} rev.#{RCS_REVISION} - edits files in-place through given filter commands
 
 #{usage}
   EOF
@@ -121,9 +121,15 @@ usage: #{MYNAME} [-Lnstvz] [-b SUFFIX] -e COMMANDLINE [ ...]
 
   files = opts.order(*argv)
 
+  if files.empty?
+    STDERR.puts "No files to process given.", ""
+    print opts
+    exit 2
+  end
+
   case $filters.size
   when 0
-    STDERR.puts "No filter command line to execute given."
+    STDERR.puts "No filter command line to execute given.", ""
     print opts
     exit 1
   when 1
@@ -133,7 +139,7 @@ usage: #{MYNAME} [-Lnstvz] [-b SUFFIX] -e COMMANDLINE [ ...]
       begin
         filter.filter!(file, file)
       rescue => e
-        STDERR.puts "#{file}skipped: #{e}"
+        STDERR.puts "#{file}: skipped: #{e}"
       end
     }
   else

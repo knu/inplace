@@ -1,11 +1,11 @@
-.\" $Idaemons: /home/cvs/inplace/inplace.1,v 1.4 2004/04/08 17:10:14 knu Exp $
+.\" $Idaemons: /home/cvs/inplace/inplace.1,v 1.5 2004/04/17 09:04:06 knu Exp $
 .\"
 .Dd April 7, 2004
 .Dt INPLACE 1
 .Os FreeBSD
 .Sh NAME
 .Nm inplace
-.Nd edits files in-place through a given filter command
+.Nd edits files in-place through given filter commands
 .Sh SYNOPSIS
 .Nm
 .Op Fl Lnstvz
@@ -15,14 +15,14 @@
 .Sh DESCRIPTION
 The
 .Nm
-command is a utility to edit files in-place through a given filter
-command preserving the original file attributes.  Mode and ownership
+command is a utility to edit files in-place through given filter
+commands preserving the original file attributes.  Mode and ownership
 (user and group) are preserved by default, and time (access and
 modification) by choice.
 .Pp
 There are some cases where
 .Nm
-does not replace a file with the resulted file when:
+does not replace a file with the resulted file, such as when:
 .Bl -enum -offset indent
 .It
 A filter command fails and exits with a non-zero return code
