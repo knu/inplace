@@ -34,7 +34,7 @@ if RUBY_VERSION < "1.8.0"
   exit 255
 end
 
-RCS_ID = %q$Idaemons: /home/cvs/inplace/inplace.rb,v 1.2 2004/04/07 15:37:01 knu Exp $
+RCS_ID = %q$Idaemons: /home/cvs/inplace/inplace.rb,v 1.3 2004/04/08 15:33:20 knu Exp $
 RCS_REVISION = RCS_ID.split[2]
 MYNAME = File.basename($0)
 
@@ -47,7 +47,7 @@ def init
   $backup_suffix = nil
   $dereference = $dry_run = $same_directory =
                  $preserve_time = $accept_zero = false
-  $commandline = nil
+  $filters = []
 end
 
 def main(argv)
@@ -83,7 +83,7 @@ usage: #{MYNAME} [-Lnstvz] [-b SUFFIX] -e COMMANDLINE [ ...]
     opts.def_option("-e", "--execute=COMMANDLINE",
                     "Run COMMANDLINE for each file; no %s implies#{NEXTLINE}\"(...) < %s > %s\" around, and one %s implies#{NEXTLINE}\"(...) > %s\" around; %s's will be replaced with#{NEXTLINE}each source file and target file") {
       |s|
-      $commandline = s
+      $filters << FileFilter.new(s)
     }
 
     opts.def_option("-n", "--dry-run",
@@ -121,17 +121,45 @@ usage: #{MYNAME} [-Lnstvz] [-b SUFFIX] -e COMMANDLINE [ ...]
 
   files = opts.order(*argv)
 
-  if $commandline.nil?
-    STDERR.puts "No command line to execute given."
+  case $filters.size
+  when 0
+    STDERR.puts "No filter command line to execute given."
     print opts
     exit 1
+  when 1
+    filter = $filters.first
+
+    files.each { |file|
+      begin
+        filter.filter!(file)
+      rescue => e
+        STDERR.puts "skipping #{file}: #{e}"
+      end
+    }
+  else
+    files.each { |file|
+      tmpf = FileFilter.mktemp_for(file)
+      tmpf.close
+
+      tmpfile = tmpf.path
+
+      first, last = 0, $filters.size - 1
+
+      begin
+        $filters.each_with_index { |filter, i|
+          if i == first
+            filter.filter(file, tmpfile)
+          elsif i == last
+            filter.filter(tmpfile, file)
+          else
+            filter.filter!(tmpfile)
+          end
+        }
+      rescue => e
+        STDERR.puts "#{file}: skipped: #{e}"
+      end
+    }
   end
-
-  filter = FileFilter.new($commandline)
-
-  files.each { |file|
-    filter.filter(file)
-  }
 rescue OptionParser::ParseError => e
   STDERR.puts "#{MYNAME}: #{e}", usage
   exit 64
@@ -152,75 +180,80 @@ class FileFilter
     when 2
       # ok
     else
-      raise ArgumentError, "too many arguments: " << commandline
+      raise "too many arguments: " << commandline
     end
   end
 
-  def filter(infile)
-    outfile = nil
+  def flunk(fmt, *args)
+    raise sprintf(fmt, *args)
+  end
 
+  def filter!(file)
+    filter(file, file)
+  end
+
+  def filter(infile, outfile)
     if !File.exist?(infile)
-      warn "no such file or directory: %s", infile
-      return
+      flunk "file not found"
     end
 
-    if File.symlink?(infile)
+    if File.symlink?(outfile)
       if !$dereference
-        warn "skipping a symlink %s", infile
-        return
+        flunk "symlink"
       end
 
       if !$have_realpath
-        warn "skipping a symlink %s because realpath(3) is unavailable", infile
-        return
+        flunk "symlink; realpath(3) is required to handle it"
       end
 
-      outfile = File.realpath(infile)
+      orig_outfile = outfile
+      outfile = File.realpath(outfile)
 
       if !outfile
-        warn "skipping a symlink %s which cannot be resolved", infile
-        return
+        flunk "symlink unresolvable"
       end
 
       if !File.file?(outfile)
-        warn "skipping a symlink %s which is not linked to a regular file", infile
-        return
+        flunk "symlink to a non-regular file"
       end
     else
-      if !File.file?(infile)
-        warn "skipping %s which is not a regular file", infile
-        return
+      if !File.file?(outfile)
+        flunk "not a regular file"
       end
-
-      outfile = infile
     end
 
-    tmpfile = mktemp_for(outfile)
+    tmpf = FileFilter.mktemp_for(outfile)
+    tmpf.close
+    tmpfile = tmpf.path
 
     filtercommand = sprintf(@commandline, sh_escape(infile), sh_escape(tmpfile))
 
     if run(filtercommand)
       if !File.file?(tmpfile)
-        warn "not replacing %s as the output file is gone somehow", infile
-        return
+        flunk "output file removed"
       end
 
       if !$accept_zero && File.zero?(tmpfile)
-        warn "not replacing %s as the output file is empty", infile
-        return
+        flunk "empty output"
       end unless $dry_run
 
       if FileUtils.cmp(infile, tmpfile)
-        warn "not replacing %s as the output is identical to the input", infile
-        return
+        flunk "unchanged"
       end unless $dry_run
 
       stat = File.stat(infile)
 
       replace(tmpfile, outfile, stat)
     else
-      warn "not replacing %s as the command exited with %d", infile, $?.exitstatus
-      return
+      flunk "command exited with %d", $?.exitstatus
+    end
+  end
+
+  def self.mktemp_for(outfile)
+    if $same_directory
+      Tempfile.new(MYNAME, File.dirname(outfile))
+    else
+      Tempfile.new(MYNAME)
     end
   end
 
@@ -254,17 +287,6 @@ class FileFilter
 
   def warn(fmt, *args)
     STDERR.puts "warning: " + sprintf(fmt, *args)
-  end
-
-  def mktemp_for(outfile)
-    if $same_directory
-      f = Tempfile.new(MYNAME, File.dirname(outfile))
-    else
-      f = Tempfile.new(MYNAME)
-    end
-
-    f.close
-    f.path
   end
 
   def run(command)

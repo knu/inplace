@@ -1,4 +1,4 @@
-.\" $Idaemons: /home/cvs/inplace/inplace.1,v 1.1 2004/04/07 09:07:34 knu Exp $
+.\" $Idaemons: /home/cvs/inplace/inplace.1,v 1.2 2004/04/08 15:33:20 knu Exp $
 .\"
 .Dd April 7, 2004
 .Dt INPLACE 1
@@ -74,6 +74,9 @@ target file, shell escaped with
 .Pf \e ' s
 as necessary.
 .Pp
+This option can be specified many times, and they will be executed in
+sequence.  A file is only replaced if all of them succeeds.
+.Pp
 See the EXAMPLES section below for details.
 .Pp
 .It Fl n
@@ -135,6 +138,10 @@ and this, oriented for perverts:
 Perform in-place charset conversion:
 .Pp
 .Dl inplace -e "iconv -f 'EUC-JP' -t 'UTF-8'" file1 file2 file3
+.Pp
+Perform in-place charset conversion and :
+.Pp
+.Dl 
 .Pp
 .It
 Perform a mass MP3 tag modification without changing timestamps:
