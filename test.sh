@@ -216,8 +216,7 @@ main () {
     n=7
     error=0
 
-    for i in $(jot 1 $n $n); do
-#    for i in $(jot $n 1 $n); do
+    for i in $(jot $n 1 $n); do
 	echo -n "test$i..."
 	setup
 
