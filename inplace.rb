@@ -34,7 +34,7 @@ if RUBY_VERSION < "1.8.0"
   exit 255
 end
 
-RCS_ID = %q$Idaemons$
+RCS_ID = %q$Idaemons: /home/cvs/inplace/inplace.rb,v 1.1 2004/04/07 07:59:49 knu Exp $
 RCS_REVISION = RCS_ID.split[2]
 MYNAME = File.basename($0)
 
@@ -44,7 +44,7 @@ COLUMNSIZE = 24
 NEXTLINE = "\n%*s" % [4 + COLUMNSIZE + 1, '']
 
 def init
-  $backup_suffix = ".orig"
+  $backup_suffix = nil
   $dereference = $dry_run = $same_directory =
                  $preserve_time = $accept_zero = false
   $commandline = nil
