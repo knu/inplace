@@ -34,7 +34,7 @@ if RUBY_VERSION < "1.8.0"
   exit 255
 end
 
-RCS_ID = %q$Idaemons: /home/cvs/inplace/inplace.rb,v 1.1 2004/04/07 07:59:49 knu Exp $
+RCS_ID = %q$Idaemons: /home/cvs/inplace/inplace.rb,v 1.2 2004/04/07 15:37:01 knu Exp $
 RCS_REVISION = RCS_ID.split[2]
 MYNAME = File.basename($0)
 
@@ -207,6 +207,11 @@ class FileFilter
 
       if !$accept_zero && File.zero?(tmpfile)
         warn "not replacing %s as the output file is empty", infile
+        return
+      end unless $dry_run
+
+      if FileUtils.cmp(infile, tmpfile)
+        warn "not replacing %s as the output is identical to the input", infile
         return
       end unless $dry_run
 

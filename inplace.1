@@ -1,4 +1,4 @@
-.\" $Idaemons$
+.\" $Idaemons: /home/cvs/inplace/inplace.1,v 1.1 2004/04/07 09:07:34 knu Exp $
 .\"
 .Dd April 7, 2004
 .Dt INPLACE 1
@@ -20,9 +20,19 @@ command preserving the original file attributes.  Mode and ownership
 (user and group) are preserved by default, and time (access and
 modification) by choice.
 .Pp
-If a command fails and exits with a non-zero return code,
+There are some cases where
 .Nm
-will cancel the replacement for the file.
+does not replace a file with the resulted file:
+.Bl -enum -offset indent
+.It
+A filter command fails and exits with a non-zero return code
+.It
+The resulted output is identical to the original file
+.It
+The resulted output is empty (use
+.Fl z
+to accept empty output)
+.El 
 .Pp
 .Sh OPTIONS
 The following command line arguments are supported:
