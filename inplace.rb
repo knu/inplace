@@ -42,6 +42,7 @@ MYDATE = %w$Date$[1]
 MYNAME = File.basename($0)
 
 require "optparse"
+require "set"
 
 COLUMNSIZE = 24
 NEXTLINE = "\n%*s" % [4 + COLUMNSIZE + 1, '']
@@ -51,6 +52,7 @@ def init
   $dereference = $dry_run = $same_directory =
                  $preserve_time = $accept_zero = false
   $filters = []
+  $tmpfiles = Set.new
 end
 
 def main(argv)
@@ -154,9 +156,8 @@ usage: #{MYNAME} [-Lnstvz] [-b SUFFIX] COMMANDLINE [file ...]
   else
     files.each { |file|
       tmpf = FileFilter.mktemp_for(file)
-      tmpf.close
-
       tmpfile = tmpf.path
+      $tmpfiles.add(tmpfile)
 
       first, last = 0, $filters.size - 1
 
@@ -172,6 +173,8 @@ usage: #{MYNAME} [-Lnstvz] [-b SUFFIX] COMMANDLINE [file ...]
         }
       rescue => e
         STDERR.puts "#{file}: skipped: #{e}"
+      ensure
+        $tmpfiles.delete(tmpfile)
       end
     }
   end
@@ -233,8 +236,8 @@ class FileFilter
     end
 
     tmpf = FileFilter.mktemp_for(outfile)
-    tmpf.close
     tmpfile = tmpf.path
+    $tmpfiles.add(tmpfile)
 
     if destructive?
       info "cp(%s, %s)", infile, tmpfile
@@ -263,14 +266,20 @@ class FileFilter
     else
       flunk origfile, "command exited with %d", $?.exitstatus
     end
+  ensure
+    $tmpfiles.delete(tmpfile)
   end
 
   def self.mktemp_for(outfile)
     if $same_directory
-      Tempfile.new(MYNAME, File.dirname(outfile))
+      tmpf = Tempfile.new(MYNAME, File.dirname(outfile))
     else
-      Tempfile.new(MYNAME)
+      tmpf = Tempfile.new(MYNAME)
     end
+
+    tmpf.close
+
+    tmpf
   end
 
   private
@@ -288,7 +297,7 @@ class FileFilter
   end
 
   def replace(file1, file2, stat)
-    if $backup_suffix && !$backup_suffix.empty?
+    if $backup_suffix && !$backup_suffix.empty? && !$tmpfiles.include?(file2)
       bakfile = file2 + $backup_suffix
 
       info "mv(%s, %s)", file2, bakfile
