@@ -1,0 +1,164 @@
+.\" $Idaemons$
+.\"
+.Dd April 7, 2004
+.Dt INPLACE 1
+.Os FreeBSD
+.Sh NAME
+.Nm inplace
+.Nd edits files in-place through a given filter command
+.Sh SYNOPSIS
+.Nm
+.Op Fl Lnstvz
+.Op Fl b Ar suffix
+.Fl e Ar commandline
+.Op Ar file ...
+.Sh DESCRIPTION
+The
+.Nm
+command is a utility to edit files inplace through a given filter
+command preserving the original file attributes.  Mode and ownership
+(user and group) are preserved by default, and time (access and
+modification) by choice.
+.Pp
+If a command fails and exits with a non-zero return code,
+.Nm
+will cancel the replacement for the file.
+.Pp
+.Sh OPTIONS
+The following command line arguments are supported:
+.Pp
+.Bl -tag -width "--preserve-timestamp" -compact
+.It Fl h
+.It Fl -help
+Show help and exit.
+.Pp
+.It Fl L
+.It Fl -dereference
+By default,
+.Nm
+ignores non-regular files including symlinks, but this switch makes it
+dereference each symlink using realpath(3) and edit the original file.
+.Pp
+.It Fl b Ar SUFFIX
+.It Fl -backup-suffix Ar SUFFIX
+Create a backup file with the given suffix for each file.  Note that
+backup files will be written over existing files, if any.
+.Pp
+.It Fl e Ar COMMANDLINE
+.It Fl -execute Ar COMMANDLINE
+Specify a filter command line to run for each file, written in the
+.Xr printf 3
+format taking two arguments.
+.Pp
+If no format specification
+.Pf ( Li "%s" )
+is given, it is implied that it has
+.Dq Li "(...) < %s > %s"
+around.  If only one format specification is given, it is implied that
+it has
+.Dq Li "(...) > %s"
+around.
+.Pp
+Those format specification will be replaced with each source file and
+target file, shell escaped with
+.Pf \e ' s
+as necessary.
+.Pp
+See the EXAMPLES section below for details.
+.Pp
+.It Fl n
+.It Fl -dry-run
+Do not perform any destructive operation and just show what would have
+been done.  This switch implies
+.Fl v .
+.Pp
+.It Fl s
+.It Fl -same-directory
+Create a temporary file in the same directory as each replaced file.
+This may speed up the performance when the directory in question is on
+a partition that is fast enough and the system temporary directory is
+slow.
+.Pp
+Another reason to use this switch is when the temporary directory does
+not have sufficient disk space for a resulted file.
+.Pp
+.It Fl t
+.It Fl -preserve-timestamp
+Preserve the access and modification times of each file.
+.Pp
+.It Fl v
+.It Fl -verbose
+Turn on verbose mode.
+.Pp
+.It Fl z
+.It Fl -accept-empty
+By default,
+.Nm
+does not replace the original file when a resulted file is empty in
+size.  This switch makes it accept empty (zero-sized) output and
+replace the original file with it.
+.El
+.Sh EXAMPLES
+.Bl -bullet
+.It
+Sort files in-place using
+.Xr sort 1 :
+.Pp
+.Dl inplace -e sort file1 file2 file3
+.Pp
+Handy, huh? :)
+.Pp
+Below is the same thing as above, except for passing input files via
+the command line argument:
+.Pp
+.Dl inplace -e 'sort %s' file1 file2 file3
+.Pp
+and this:
+.Pp
+.Dl inplace -e 'sort %s > %s' file1 file2 file3
+.Pp
+and this, oriented for perverts:
+.Pp
+.Dl inplace -e '> %2$s sort < %1$s' file1 file2 file3
+.Pp
+.It
+Perform in-place charset conversion:
+.Pp
+.Dl inplace -e "iconv -f 'EUC-JP' -t 'UTF-8'" file1 file2 file3
+.Pp
+.It
+Perform a mass MP3 tag modification without changing timestamps:
+.Pp
+.Dl find mp3/Some_Album -print0 -name '*.mp3' | xarg -0 inplace -te 'cp %1$s %2$s && mp3info -y 1999 -g "Progressive Rock" %2$s'
+.Pp
+As you see,
+.Nm
+makes a nice combo with
+.Xr find 1
+and
+.Xr xargs 1 .
+.Pp
+.El
+.Sh ENVIRONMENT
+.Bl -tag -width "TMPDIR" -compact
+.It Ev TMPDIR
+.It Ev TMP
+.It Ev TEMP
+Temporary directory candidates where
+.Nm 
+attempts to create intermediate output files, in that order.  If none
+is available and writable,
+.Pa /tmp
+is used.  If
+.Fl s
+is specified, they will not be used.
+.El
+.Sh SEE ALSO
+.Xr find 1 ,
+.Xr xargs 1 ,
+.Xr printf 3
+.Xr realpath 3
+.Sh AUTHORS
+.An Akinori MUSHA Aq knu@iDaemons.org
+.Sh BUGS
+There may be.  Use at your own risk.
