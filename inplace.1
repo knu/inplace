@@ -9,13 +9,13 @@
 .Nd edits files in-place through given filter commands
 .Sh SYNOPSIS
 .Nm
-.Op Fl Lnstvz
+.Op Fl Lfnstvz
 .Op Fl b Ar suffix
 .Fl e Ar commandline
 .Op Oo Fl e Ar commandline Oc ...
 .Op Ar file ...
 .Nm
-.Op Fl Lnstvz
+.Op Fl Lfnstvz
 .Op Fl b Ar suffix
 .Ar commandline
 .Op Ar file ...
@@ -35,8 +35,12 @@ option.
 .Pp
 There are some cases where
 .Nm
-does not replace a file with the resulted file, such as when:
+does not replace a file, such as when:
 .Bl -enum -offset indent
+.It
+The original file is not writable (use
+.Fl f
+to force editing against read-only files)
 .It
 A filter command fails and exits with a non-zero return code
 .It
@@ -99,6 +103,13 @@ sequence.  A file is only replaced if all of them succeeds.
 .Pp
 See the EXAMPLES section below for details.
 .Pp
+.It Fl f
+.It Fl -force
+By default,
+.Nm
+does not perform editing if a file is not writable.  This switch makes
+it force editing even if a file to process is read-only.
+.Pp
 .It Fl n
 .It Fl -dry-run
 Do not perform any destructive operation and just show what would have
@@ -157,7 +168,7 @@ Process image files taking backup files:
 .It
 Perform a mass MP3 tag modification without changing timestamps:
 .Pp
-.Dl find mp3/Some_Artist -name '*.mp3' -print0 | xarg -0 inplace -te 'mp3info -a \&"Some Artist\&" -g \&"Progressive Rock\&" %1'
+.Dl find mp3/Some_Artist -name '*.mp3' -print0 | xargs -0 inplace -te 'mp3info -a \&"Some Artist\&" -g \&"Progressive Rock\&" %1'
 .Pp
 As you see above,
 .Nm

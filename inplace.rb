@@ -49,7 +49,7 @@ NEXTLINE = "\n%*s" % [4 + COLUMNSIZE + 1, '']
 
 def init
   $backup_suffix = nil
-  $dereference = $dry_run = $same_directory =
+  $dereference = $force = $dry_run = $same_directory =
                  $preserve_time = $accept_zero = false
   $filters = []
   $tmpfiles = Set.new
@@ -57,8 +57,8 @@ end
 
 def main(argv)
   usage = <<-"EOF"
-usage: #{MYNAME} [-Lnstvz] [-b SUFFIX] COMMANDLINE [file ...]
-       #{MYNAME} [-Lnstvz] [-b SUFFIX] [-e COMMANDLINE] [file ...]
+usage: #{MYNAME} [-Lfnstvz] [-b SUFFIX] COMMANDLINE [file ...]
+       #{MYNAME} [-Lfnstvz] [-b SUFFIX] [-e COMMANDLINE] [file ...]
   EOF
 
   banner = <<-"EOF"
@@ -91,6 +91,12 @@ usage: #{MYNAME} [-Lnstvz] [-b SUFFIX] COMMANDLINE [file ...]
                     "Run COMMANDLINE for each file in which the following#{NEXTLINE}placeholders can be used:#{NEXTLINE}  %0: replaced by the original file path#{NEXTLINE}  %1: replaced by the source file path#{NEXTLINE}  %2: replaced by the destination file path#{NEXTLINE}  %%: replaced by a %#{NEXTLINE}Missing %2 indicates %1 is modified destructively,#{NEXTLINE}and missing both %1 and %2 implies \"(...) < %1 > %2\"#{NEXTLINE}around the command line.") {
       |s|
       $filters << FileFilter.new(s)
+    }
+
+    opts.def_option("-f", "--force",
+                    "Force editing even if a file is read-only.") {
+      |b|
+      $force = b
     }
 
     opts.def_option("-n", "--dry-run",
@@ -212,27 +218,30 @@ class FileFilter
     end
 
     if File.symlink?(outfile)
-      if !$dereference
+      $dereference or
         flunk origfile, "symlink"
-      end
 
-      if !$have_realpath
+      $have_realpath or
         flunk origfile, "symlink; realpath(3) is required to handle it"
-      end
 
-      outfile = File.realpath(outfile)
-
-      if !outfile
+      outfile = File.realpath(outfile) or
         flunk origfile, "symlink unresolvable"
-      end
 
-      if !File.file?(outfile)
+      st = File.stat(outfile)
+
+      st.file? or
         flunk origfile, "symlink to a non-regular file"
-      end
+
+      $force || st.writable? or
+        flunk origfile, "symlink to a read-only file"
     else
-      if !File.file?(outfile)
-        flunk origfile, "not a regular file"
-      end
+      st = File.stat(outfile)
+
+      st.file? or
+        flunk origfile, "non-regular file"
+
+      $force || st.writable? or
+        flunk origfile, "read-only file"
     end
 
     tmpf = FileFilter.mktemp_for(outfile)
