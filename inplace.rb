@@ -28,14 +28,17 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
+# $Idaemons: /home/cvs/inplace/inplace.rb,v 1.7 2004/04/21 13:25:51 knu Exp $
+# $Id$
 
 if RUBY_VERSION < "1.8.0"
   STDERR.puts "Ruby 1.8 or later is required."
   exit 255
 end
 
-RCS_ID = %q$Idaemons: /home/cvs/inplace/inplace.rb,v 1.6 2004/04/17 13:04:11 knu Exp $
-RCS_REVISION = RCS_ID.split[2]
+MYVERSION = "1.0.0"
+MYREVISION = %w$Rev$[1]
+MYDATE = %w$Date$[1]
 MYNAME = File.basename($0)
 
 require "optparse"
@@ -57,7 +60,8 @@ usage: #{MYNAME} [-Lnstvz] [-b SUFFIX] COMMANDLINE [file ...]
   EOF
 
   banner = <<-"EOF"
-#{MYNAME} rev.#{RCS_REVISION} - edits files in-place through given filter commands
+#{MYNAME} - edits files in-place through given filter commands
+  version #{MYVERSION} [revision #{MYREVISION}] (#{MYDATE})
 
 #{usage}
   EOF
