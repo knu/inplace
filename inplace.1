@@ -1,4 +1,4 @@
-.\" $Idaemons: /home/cvs/inplace/inplace.1,v 1.6 2004/04/17 13:04:11 knu Exp $
+.\" $Idaemons: /home/cvs/inplace/inplace.1,v 1.7 2004/04/17 13:10:49 knu Exp $
 .\"
 .Dd April 7, 2004
 .Dt INPLACE 1
@@ -11,6 +11,12 @@
 .Op Fl Lnstvz
 .Op Fl b Ar suffix
 .Fl e Ar commandline
+.Op Oo Fl e Ar commandline Oc ...
+.Op Ar file ...
+.Nm
+.Op Fl Lnstvz
+.Op Fl b Ar suffix
+.Ar commandline
 .Op Ar file ...
 .Sh DESCRIPTION
 The
@@ -19,6 +25,12 @@ command is a utility to edit files in-place through given filter
 commands preserving the original file attributes.  Mode and ownership
 (user and group) are preserved by default, and time (access and
 modification) by choice.
+.Pp
+A single command may be specified as the first argument to
+.Nm .
+Multiple commands may be specified by using the
+.Fl e
+option.
 .Pp
 There are some cases where
 .Nm
@@ -124,12 +136,12 @@ replace the original file with it.
 Sort files in-place using
 .Xr sort 1 :
 .Pp
-.Dl inplace -e sort file1 file2 file3
+.Dl inplace sort file1 file2 file3
 .Pp
 Below is the same thing as above, except for passing input files via
 the command line argument:
 .Pp
-.Dl inplace -e 'sort %1 > %2' file1 file2 file3
+.Dl inplace 'sort %1 > %2' file1 file2 file3
 .Pp
 .It
 Perform in-place charset conversion and newline code conversion:
@@ -139,7 +151,7 @@ Perform in-place charset conversion and newline code conversion:
 .It
 Process image files taking backup files:
 .Pp
-.Dl inplace -b.orig -e 'convert -rotate 270 -resize 50%% %1 %2' *.jpg
+.Dl inplace -b.orig 'convert -rotate 270 -resize 50%% %1 %2' *.jpg
 .Pp
 .It
 Perform a mass MP3 tag modification without changing timestamps:

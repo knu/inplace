@@ -34,7 +34,7 @@ if RUBY_VERSION < "1.8.0"
   exit 255
 end
 
-RCS_ID = %q$Idaemons: /home/cvs/inplace/inplace.rb,v 1.5 2004/04/17 09:04:06 knu Exp $
+RCS_ID = %q$Idaemons: /home/cvs/inplace/inplace.rb,v 1.6 2004/04/17 13:04:11 knu Exp $
 RCS_REVISION = RCS_ID.split[2]
 MYNAME = File.basename($0)
 
@@ -52,7 +52,8 @@ end
 
 def main(argv)
   usage = <<-"EOF"
-usage: #{MYNAME} [-Lnstvz] [-b SUFFIX] -e COMMANDLINE [ ...]
+usage: #{MYNAME} [-Lnstvz] [-b SUFFIX] COMMANDLINE [file ...]
+       #{MYNAME} [-Lnstvz] [-b SUFFIX] [-e COMMANDLINE] [file ...]
   EOF
 
   banner = <<-"EOF"
@@ -120,6 +121,10 @@ usage: #{MYNAME} [-Lnstvz] [-b SUFFIX] -e COMMANDLINE [ ...]
   init()
 
   files = opts.order(*argv)
+
+  if $filters.empty? && !files.empty?
+    $filters << FileFilter.new(files.shift)
+  end
 
   if files.empty?
     STDERR.puts "No files to process given.", ""
