@@ -10,3 +10,6 @@ MAN=		inplace.1
 .PATH:	${.CURDIR}/..
 
 .include <bsd.prog.mk>
+
+test:
+	@${.CURDIR}/test.sh
