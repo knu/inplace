@@ -34,7 +34,7 @@ if RUBY_VERSION < "1.8.0"
   exit 255
 end
 
-RCS_ID = %q$Idaemons: /home/cvs/inplace/inplace.rb,v 1.3 2004/04/08 15:33:20 knu Exp $
+RCS_ID = %q$Idaemons: /home/cvs/inplace/inplace.rb,v 1.4 2004/04/08 16:44:38 knu Exp $
 RCS_REVISION = RCS_ID.split[2]
 MYNAME = File.basename($0)
 
@@ -63,55 +63,55 @@ usage: #{MYNAME} [-Lnstvz] [-b SUFFIX] -e COMMANDLINE [ ...]
 
   opts = OptionParser.new(banner, COLUMNSIZE) { |opts|
     opts.def_option("-h", "--help",
-                    "Show this message") {
+                    "Show this message.") {
       print opts
       exit 0
     }
 
     opts.def_option("-L", "--dereference",
-                    "Dereference using realpath(3) and edit the original#{NEXTLINE}file for each symlink") {
+                    "Dereference using realpath(3) and edit the original#{NEXTLINE}file for each symlink.") {
       |b|
       $dereference = s
     }
 
     opts.def_option("-b", "--backup-suffix=SUFFIX",
-                    "Create a backup file with the SUFFIX for each file;#{NEXTLINE}Backup files will be written over existing files,#{NEXTLINE}if any") {
+                    "Create a backup file with the SUFFIX for each file.#{NEXTLINE}Backup files will be written over existing files,#{NEXTLINE}if any.") {
       |s|
       $backup_suffix = s
     }
 
     opts.def_option("-e", "--execute=COMMANDLINE",
-                    "Run COMMANDLINE for each file; no %s implies#{NEXTLINE}\"(...) < %s > %s\" around, and one %s implies#{NEXTLINE}\"(...) > %s\" around; %s's will be replaced with#{NEXTLINE}each source file and target file") {
+                    "Run COMMANDLINE for each file in which the following#{NEXTLINE}placeholders can be used:#{NEXTLINE}  %0: replaced by the original file path#{NEXTLINE}  %1: replaced by the source file path#{NEXTLINE}  %2: replaced by the destination file path#{NEXTLINE}  %%: replaced by a %#{NEXTLINE}Missing %2 indicates %1 is modified destructively,#{NEXTLINE}and missing both %1 and %2 implies \"(...) < %1 > %2\"#{NEXTLINE}around the command line.") {
       |s|
       $filters << FileFilter.new(s)
     }
 
     opts.def_option("-n", "--dry-run",
-                    "Just show what would have been done") {
+                    "Just show what would have been done.") {
       |b|
       $dry_run = b and $verbose = true
     }
 
     opts.def_option("-s", "--same-directory",
-                    "Create a temporary file in the same directory as#{NEXTLINE}each replaced file") {
+                    "Create a temporary file in the same directory as#{NEXTLINE}each replaced file.") {
       |b|
       $same_directory = b
     }
 
     opts.def_option("-t", "--preserve-timestamp",
-                    "Preserve the modification time of each file") {
+                    "Preserve the modification time of each file.") {
       |b|
       $preserve_time = b
     }
 
     opts.def_option("-v", "--verbose",
-                    "Turn on verbose mode") {
+                    "Turn on verbose mode.") {
       |b|
       $verbose = b
     }
 
     opts.def_option("-z", "--accept-empty",
-                    "Accept empty (zero-sized) output") {
+                    "Accept empty (zero-sized) output.") {
       |b|
       $accept_zero = b
     }
@@ -131,9 +131,9 @@ usage: #{MYNAME} [-Lnstvz] [-b SUFFIX] -e COMMANDLINE [ ...]
 
     files.each { |file|
       begin
-        filter.filter!(file)
+        filter.filter!(file, file)
       rescue => e
-        STDERR.puts "skipping #{file}: #{e}"
+        STDERR.puts "#{file}skipped: #{e}"
       end
     }
   else
@@ -148,11 +148,11 @@ usage: #{MYNAME} [-Lnstvz] [-b SUFFIX] -e COMMANDLINE [ ...]
       begin
         $filters.each_with_index { |filter, i|
           if i == first
-            filter.filter(file, tmpfile)
+            filter.filter(file, file, tmpfile)
           elsif i == last
-            filter.filter(tmpfile, file)
+            filter.filter(file, tmpfile, file)
           else
-            filter.filter!(tmpfile)
+            filter.filter!(file, tmpfile)
           end
         }
       rescue => e
@@ -163,6 +163,9 @@ usage: #{MYNAME} [-Lnstvz] [-b SUFFIX] -e COMMANDLINE [ ...]
 rescue OptionParser::ParseError => e
   STDERR.puts "#{MYNAME}: #{e}", usage
   exit 64
+rescue => e
+  STDERR.puts "#{MYNAME}: #{e}"
+  exit 1
 end
 
 require 'tempfile'
@@ -170,55 +173,47 @@ require 'fileutils'
 
 class FileFilter
   def initialize(commandline)
-    @commandline = commandline.dup
-
-    case format_arity(@commandline)
-    when 0
-      @commandline = "(#{@commandline}) < %s > %s"
-    when 1
-      @commandline = "(#{@commandline}) > %s"
-    when 2
-      # ok
-    else
-      raise "too many arguments: " << commandline
-    end
+    @formatter = Formatter.new(commandline)
   end
 
-  def flunk(fmt, *args)
-    raise sprintf(fmt, *args)
+  def destructive?
+    @formatter.arity == 1
   end
 
-  def filter!(file)
-    filter(file, file)
+  def flunk(origfile, fmt, *args)
+    raise "#{origfile}: " << sprintf(fmt, *args)
   end
 
-  def filter(infile, outfile)
+  def filter!(origfile, file)
+    filter(origfile, file, file)
+  end
+
+  def filter(origfile, infile, outfile)
     if !File.exist?(infile)
-      flunk "file not found"
+      flunk origfile, "file not found"
     end
 
     if File.symlink?(outfile)
       if !$dereference
-        flunk "symlink"
+        flunk origfile, "symlink"
       end
 
       if !$have_realpath
-        flunk "symlink; realpath(3) is required to handle it"
+        flunk origfile, "symlink; realpath(3) is required to handle it"
       end
 
-      orig_outfile = outfile
       outfile = File.realpath(outfile)
 
       if !outfile
-        flunk "symlink unresolvable"
+        flunk origfile, "symlink unresolvable"
       end
 
       if !File.file?(outfile)
-        flunk "symlink to a non-regular file"
+        flunk origfile, "symlink to a non-regular file"
       end
     else
       if !File.file?(outfile)
-        flunk "not a regular file"
+        flunk origfile, "not a regular file"
       end
     end
 
@@ -226,26 +221,32 @@ class FileFilter
     tmpf.close
     tmpfile = tmpf.path
 
-    filtercommand = sprintf(@commandline, sh_escape(infile), sh_escape(tmpfile))
+    if destructive?
+      info "cp(%s, %s)", infile, tmpfile
+      FileUtils.cp(infile, tmpfile) unless $dry_run
+      filtercommand = @formatter.format(origfile, tmpfile)
+    else
+      filtercommand = @formatter.format(origfile, infile, tmpfile)
+    end
 
     if run(filtercommand)
       if !File.file?(tmpfile)
-        flunk "output file removed"
+        flunk origfile, "output file removed"
       end
 
       if !$accept_zero && File.zero?(tmpfile)
-        flunk "empty output"
+        flunk origfile, "empty output"
       end unless $dry_run
 
       if FileUtils.cmp(infile, tmpfile)
-        flunk "unchanged"
+        flunk origfile, "unchanged"
       end unless $dry_run
 
       stat = File.stat(infile)
 
       replace(tmpfile, outfile, stat)
     else
-      flunk "command exited with %d", $?.exitstatus
+      flunk origfile, "command exited with %d", $?.exitstatus
     end
   end
 
@@ -258,29 +259,6 @@ class FileFilter
   end
 
   private
-  def format_arity(fmt)
-    args = []
-
-    # 5 should be enough here
-    5.times { |i|
-      begin
-        format(fmt, *args)
-        return i
-      rescue ArgumentError => e
-        if /^too few argument/ =~ e.message
-          args.push(0)
-          next
-        end
-
-        raise e
-      end
-    }
-  end
-
-  def sh_escape(str)
-    str.gsub(/([^A-Za-z0-9_\-.,:\/@])/n, "\\\\\\1")
-  end
-
   def info(fmt, *args)
     puts sprintf(fmt, *args) if $verbose
   end
@@ -328,6 +306,75 @@ class FileFilter
 
     info "chmod(%o, %s)", stat.mode & 01777, file
     File.chmod stat.mode, file unless $dry_run
+  end
+
+  class Formatter
+    def initialize(fmt)
+      @fmt = fmt.dup.freeze
+      @arity = nil
+
+      begin
+        self.format("0", "1", "2")
+      rescue => e
+        raise e
+      end
+
+      if @arity == 0
+        @fmt = "(#{@fmt}) < %1 > %2"
+        @arity = 2
+      end
+    end
+
+    attr_reader :arity
+
+    def format(origfile, infile, outfile = nil)
+      s = ''
+      fmt = @fmt.dup
+
+      arity_bits = 0
+
+      until fmt.empty?
+        fmt.sub!(/\A([^%]+)/) {
+          s << $1
+          ''
+        }
+        fmt.sub!(/\A%(.)/) {
+          case c = $1
+          when '%'
+            s << c
+          when '0'
+            s << sh_escape(origfile)
+          when '1'
+            s << sh_escape(infile)
+
+            arity_bits |= 0x1
+          when '2'
+            s << sh_escape(outfile)
+            arity_bits |= 0x2
+          else
+            raise ArgumentError, "invalid placeholder specification (%#{c}): #{@fmt}"
+          end
+          ''
+        }
+      end
+
+      case arity_bits
+      when 0x0
+        @arity = 0
+      when 0x1
+        @arity = 1
+      when 0x2
+        raise ArgumentError, "%1 is missing while %2 is specified: #{@fmt}"
+      when 0x3
+        @arity = 2
+      end
+
+      s
+    end
+
+    def sh_escape(str)
+      str.gsub(/([^A-Za-z0-9_\-.,:\/@])/n, "\\\\\\1")
+    end
   end
 end
 

@@ -1,4 +1,4 @@
-.\" $Idaemons: /home/cvs/inplace/inplace.1,v 1.3 2004/04/08 16:44:38 knu Exp $
+.\" $Idaemons: /home/cvs/inplace/inplace.1,v 1.4 2004/04/08 17:10:14 knu Exp $
 .\"
 .Dd April 7, 2004
 .Dt INPLACE 1
@@ -15,14 +15,14 @@
 .Sh DESCRIPTION
 The
 .Nm
-command is a utility to edit files inplace through a given filter
+command is a utility to edit files in-place through a given filter
 command preserving the original file attributes.  Mode and ownership
 (user and group) are preserved by default, and time (access and
 modification) by choice.
 .Pp
 There are some cases where
 .Nm
-does not replace a file with the resulted file:
+does not replace a file with the resulted file when:
 .Bl -enum -offset indent
 .It
 A filter command fails and exits with a non-zero return code
@@ -56,22 +56,29 @@ backup files will be written over existing files, if any.
 .Pp
 .It Fl e Ar COMMANDLINE
 .It Fl -execute Ar COMMANDLINE
-Specify a filter command line to run for each file, written in the
-.Xr printf 3
-format taking two arguments.
+Specify a filter command line to run for each file in which the following placeholders can be used:
+.Bl -tag -offset indent -nested
+.It Cm %0
+replaced by the original file path
+.It Cm %1
+replaced by the source file path
+.It Cm %2
+replaced by the destination file path
+.It Cm %%
+replaced by
+.Ql % .
+.El
 .Pp
-If no format specification
-.Pf ( Li "%s" )
-is given, it is implied that it has
-.Dq Li "(...) < %s > %s"
-around.  If only one format specification is given, it is implied that
-it has
-.Dq Li "(...) > %s"
-around.
+Missing %2 indicates %1 is modified destructively, and missing both %1
+and %2 implies
+.Dq Li "(...) < %1 > %2"
+around the command line.
 .Pp
-Those format specification will be replaced with each source file and
-target file, shell escaped with
-.Pf \e ' s
+The destination file is always a temporary file, and the source file
+is either the original file or a temporary file.
+.Pp
+Placed file paths will be properly shell escaped with
+.Pf \e 's
 as necessary.
 .Pp
 This option can be specified many times, and they will be executed in
@@ -119,36 +126,27 @@ Sort files in-place using
 .Pp
 .Dl inplace -e sort file1 file2 file3
 .Pp
-Handy, huh? :)
-.Pp
 Below is the same thing as above, except for passing input files via
 the command line argument:
 .Pp
-.Dl inplace -e 'sort %s' file1 file2 file3
-.Pp
-and this:
-.Pp
-.Dl inplace -e 'sort %s > %s' file1 file2 file3
-.Pp
-and this, oriented for perverts:
-.Pp
-.Dl inplace -e '> %2$s sort < %1$s' file1 file2 file3
+.Dl inplace -e 'sort %1 > %2' file1 file2 file3
 .Pp
 .It
-Perform in-place charset conversion:
-.Pp
-.Dl inplace -e 'iconv -f EUC-JP -t UTF-8' file1 file2 file3
-.Pp
 Perform in-place charset conversion and newline code conversion:
 .Pp
 .Dl inplace -e 'iconv -f EUC-JP -t UTF-8' -e 'perl -pe \&"s/$/\e\er/\&"' file1 file2 file3
 .Pp
 .It
+Process image files taking backup files:
+.Pp
+.Dl inplace -b.orig -te 'convert -rotate 270 -resize 50%% %1 %2' *.jpg
+.Pp
+.It
 Perform a mass MP3 tag modification without changing timestamps:
 .Pp
-.Dl find mp3/Some_Album -print0 -name '*.mp3' | xarg -0 inplace -te 'cp %1$s %2$s && mp3info -y 1999 -g \&"Progressive Rock\&" %2$s'
+.Dl find mp3/Some_Artist -print0 -name '*.mp3' | xarg -0 inplace -te 'mp3info -a \&"Some Artist\&" -g \&"Progressive Rock\&" %1'
 .Pp
-As you see,
+As you see above,
 .Nm
 makes a nice combo with
 .Xr find 1
@@ -173,7 +171,6 @@ is specified, they will not be used.
 .Sh SEE ALSO
 .Xr find 1 ,
 .Xr xargs 1 ,
-.Xr printf 3
 .Xr realpath 3
 .Sh AUTHORS
 .An Akinori MUSHA Aq knu@iDaemons.org
