@@ -27,6 +27,9 @@ setup () {
     (echo a b c) > "a b c.txt"
     (echo c b a) > "c b a.txt"
 
+    ln -s ABC.txt ABC_.txt
+    ln -s ABC_.txt ABC__.txt
+
     for f in *.txt; do
 	cp -p "$f" "$f.orig"
     done
@@ -80,6 +83,10 @@ test1 () {
     cmp_file 'a b c.txt' 'c b a.txt.orig' || return 1
     cmp_time 'a b c.txt' 'a b c.txt.orig' && return 1
 
+    inplace -e 'sort -r' -e 'tr A-Z a-z' ABC.txt
+    cmp_file ABC.txt cba.txt.orig || return 1
+    cmp_time ABC.txt cba.txt.orig && return 1
+
     inplace -t 'sort' cba.txt
     cmp_file cba.txt abc.txt.orig || return 1
     cmp_time cba.txt cba.txt.orig || return 1
@@ -106,6 +113,10 @@ test2 () {
     cmp_file 'a b c.txt' 'c b a.txt.orig' || return 1
     cmp_time 'a b c.txt' 'a b c.txt.orig' && return 1
 
+    inplace -e 'sort -r %1 > %2' -e 'tr A-Z a-z' ABC.txt
+    cmp_file ABC.txt cba.txt.orig || return 1
+    cmp_time ABC.txt cba.txt.orig && return 1
+
     inplace -t 'sort %1 > %2' cba.txt
     cmp_file cba.txt abc.txt.orig || return 1
     cmp_time cba.txt cba.txt.orig || return 1
@@ -127,6 +138,10 @@ test3 () {
     inplace "$ruby -i -pe '\$_.chomp!; \$_ = \$_.reverse + \"\\n\"' %1" 'a b c.txt'
     cmp_file 'a b c.txt' 'c b a.txt' || return 1
     cmp_time 'a b c.txt' 'a b c.txt.orig' && return 1
+
+    inplace -e "$ruby -i -pe '\$_.tr!(\"a\", \"A\")' %1" -e "$ruby -i -pe '\$_.tr!(\"bc\", \"BC\")' %1" abc.txt
+    cmp_file abc.txt ABC.txt.orig || return 1
+    cmp_time abc.txt ABC.txt.orig && return 1
 
     return 0
 }
@@ -163,12 +178,12 @@ test5 () {
 
 test6 () {
     # zero-sized output test
-    inplace -b.bak 'sleep 0' abb.txt
+    inplace -b.bak 'cat /dev/null' abb.txt
     test -e abb.txt.bak && return 1
     cmp_file abb.txt abb.txt.orig || return 1
     cmp_time abb.txt abb.txt.orig || return 1
 
-    inplace -z -b.bak 'sleep 0' abb.txt
+    inplace -z -b.bak 'cat /dev/null' abb.txt
     test -s abb.txt && return 1
     cmp_file abb.txt.bak abb.txt.orig || return 1
     cmp_time abb.txt.bak abb.txt.orig || return 1
@@ -176,13 +191,33 @@ test6 () {
     return 0
 }
 
+test7 () {
+    # symlink test
+    inplace -b.bak 'sort -r' ABC__.txt
+    test -e ABC__.txt.bak && return 1
+    test -e ABC_.txt.bak && return 1
+    test -e ABC.txt.bak && return 1
+    cmp_file ABC.txt ABC.txt.orig || return 1
+    cmp_time ABC.txt ABC.txt.orig || return 1
+
+    inplace -L -b.bak 'sort -r' ABC__.txt
+    test -e ABC__.txt.bak && return 1
+    test -e ABC_.txt.bak && return 1
+    test -e ABC.txt.bak || return 1
+    cmp_file ABC.txt CBA.txt.orig || return 1
+    cmp_file ABC.txt.bak ABC.txt.orig || return 1
+
+    return 0
+}
+
 main () {
     initialize
 
-    n=6
+    n=7
     error=0
 
-    for i in $(jot $n 1 $n); do
+    for i in $(jot 1 $n $n); do
+#    for i in $(jot $n 1 $n); do
 	echo -n "test$i..."
 	setup
 
