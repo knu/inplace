@@ -3,7 +3,8 @@
 
 PREFIX?=	/usr/local
 BINDIR=		${PREFIX}/bin
-MANDIR=		${PREFIX}/man/man
+MANPREFIX?=	${PREFIX}
+MANDIR=		${MANPREFIX}/man/man
 
 SCRIPTS=	inplace.rb
 MAN=		inplace.1
