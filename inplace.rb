@@ -271,7 +271,9 @@ class FileFilter
 
       stat = File.stat(infile)
 
-      replace(tmpfile, outfile, stat)
+      uninterruptible {
+        replace(tmpfile, outfile, stat)
+      }
     else
       flunk origfile, "command exited with %d", $?.exitstatus
     end
@@ -337,7 +339,7 @@ class FileFilter
       mode &= 01777
     end
 
-    info "chmod(%o, %s)", stat.mode & 01777, file
+    info "chmod(%o, %s)", stat.mode, file
     File.chmod stat.mode, file unless $dry_run
   end
 
@@ -431,6 +433,26 @@ class File
   rescue LoadError, RuntimeError
     $have_realpath = false
   end
+end
+
+$uninterruptible = false
+
+[:SIGINT, :SIGQUIT, :SIGTERM].each { |sig|
+  trap(sig) {
+    unless $uninterruptible
+      STDERR.puts "Interrupted."
+      exit
+    end
+  }
+}
+
+def uninterruptible
+  orig = $uninterruptible
+  $uninterruptible = true
+
+  yield
+ensure
+  $uninterruptible = orig
 end
 
 main(ARGV)
