@@ -1,4 +1,4 @@
-.\" $Idaemons: /home/cvs/inplace/inplace.1,v 1.5 2004/04/17 09:04:06 knu Exp $
+.\" $Idaemons: /home/cvs/inplace/inplace.1,v 1.6 2004/04/17 13:04:11 knu Exp $
 .\"
 .Dd April 7, 2004
 .Dt INPLACE 1
@@ -66,7 +66,7 @@ replaced by the source file path
 replaced by the destination file path
 .It Cm %%
 replaced by
-.Ql % .
+.Ql %
 .El
 .Pp
 Missing %2 indicates %1 is modified destructively, and missing both %1
@@ -139,12 +139,12 @@ Perform in-place charset conversion and newline code conversion:
 .It
 Process image files taking backup files:
 .Pp
-.Dl inplace -b.orig -te 'convert -rotate 270 -resize 50%% %1 %2' *.jpg
+.Dl inplace -b.orig -e 'convert -rotate 270 -resize 50%% %1 %2' *.jpg
 .Pp
 .It
 Perform a mass MP3 tag modification without changing timestamps:
 .Pp
-.Dl find mp3/Some_Artist -print0 -name '*.mp3' | xarg -0 inplace -te 'mp3info -a \&"Some Artist\&" -g \&"Progressive Rock\&" %1'
+.Dl find mp3/Some_Artist -name '*.mp3' -print0 | xarg -0 inplace -te 'mp3info -a \&"Some Artist\&" -g \&"Progressive Rock\&" %1'
 .Pp
 As you see above,
 .Nm
