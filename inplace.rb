@@ -36,7 +36,7 @@ if RUBY_VERSION < "1.8.0"
   exit 255
 end
 
-MYVERSION = "1.0.1"
+MYVERSION = "1.0.2"
 MYREVISION = %w$Rev$[1]
 MYDATE = %w$Date$[1]
 MYNAME = File.basename($0)
