@@ -95,12 +95,29 @@ and %2 implies
 .Dq Li "(...) < %1 > %2"
 around the command line.
 .Pp
-The destination file is always a temporary file, and the source file
-is either the original file or a temporary file.
+The destination file is always an empty temporary file, and the source
+file is either the original file or a temporary copy file.
 .Pp
 Placed file paths will be properly shell escaped with
 .Pf \e 's
 as necessary.
+.Pp
+Instead of specifying a whole command line, you can use a command
+alias defined in a configuration file,
+.Pa ~/.inplace .
+The configuration file syntax is the usual:
+.Bl -bullet
+.It
+White spaces at the beginning or the end of a line are stripped off.
+.It
+Lines starting with a
+.Sq #
+is ignored.
+.It
+Each alias definition is a name/value pair separated with a
+.Sq = ,
+one per line.
+.El
 .Pp
 This option can be specified many times, and they will be executed in
 sequence.  A file is only replaced if all of them succeeds.
@@ -182,6 +199,10 @@ and
 .Xr xargs 1 .
 .Pp
 .El
+.Sh FILES
+.Bl -tag -width "~/.inplace"
+.It Pa ~/.inplace
+Location of the configuration file.
 .Sh ENVIRONMENT
 .Bl -tag -width "TMPDIR" -compact
 .It Ev TMPDIR

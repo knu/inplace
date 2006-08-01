@@ -49,8 +49,9 @@ NEXTLINE = "\n%*s" % [4 + COLUMNSIZE + 1, '']
 
 def init
   $backup_suffix = nil
-  $dereference = $force = $dry_run = $same_directory =
-                 $preserve_time = $accept_zero = false
+  $debug = $verbose =
+    $dereference = $force = $dry_run = $same_directory =
+    $preserve_time = $accept_zero = false
   $filters = []
   $tmpfiles = Set.new
 end
@@ -67,6 +68,9 @@ usage: #{MYNAME} [-Lfnstvz] [-b SUFFIX] COMMANDLINE [file ...]
 
 #{usage}
   EOF
+
+  $config = Config.new
+  $config.load(File.expand_path("~/.inplace"))
 
   opts = OptionParser.new(banner, COLUMNSIZE) { |opts|
     opts.def_option("-h", "--help",
@@ -96,7 +100,7 @@ usage: #{MYNAME} [-Lfnstvz] [-b SUFFIX] COMMANDLINE [file ...]
     opts.def_option("-e", "--execute=COMMANDLINE",
                     "Run COMMANDLINE for each file in which the following#{NEXTLINE}placeholders can be used:#{NEXTLINE}  %0: replaced by the original file path#{NEXTLINE}  %1: replaced by the source file path#{NEXTLINE}  %2: replaced by the destination file path#{NEXTLINE}  %%: replaced by a %#{NEXTLINE}Missing %2 indicates %1 is modified destructively,#{NEXTLINE}and missing both %1 and %2 implies \"(...) < %1 > %2\"#{NEXTLINE}around the command line.") {
       |s|
-      $filters << FileFilter.new(s)
+      $filters << FileFilter.new($config.expand_alias(s))
     }
 
     opts.def_option("-f", "--force",
@@ -141,7 +145,7 @@ usage: #{MYNAME} [-Lfnstvz] [-b SUFFIX] COMMANDLINE [file ...]
   files = opts.order(*argv)
 
   if $filters.empty? && !files.empty?
-    $filters << FileFilter.new(files.shift)
+    $filters << FileFilter.new($config.expand_alias(files.shift))
   end
 
   if files.empty?
@@ -424,6 +428,68 @@ class FileFilter
     def sh_escape(str)
       str.gsub(/([^A-Za-z0-9_\-.,:\/@])/n, "\\\\\\1")
     end
+  end
+end
+
+class Config
+  def initialize
+    @alias = {}
+  end
+
+  def load(file)
+    File.open(file) { |f|
+      f.each { |line|
+        line.strip!
+        next if /^#/ =~ line
+
+        if m = line.match(/^([^\s=]+)\s*=\s*(.+)/)
+          @alias[m[1]] = m[2]
+        end
+      }
+    }
+  rescue => e
+    # ignore
+  end
+
+  def expand_alias(command)
+    if @alias.key?(command)
+      new_command = @alias[command]
+
+      printf "expanding alias: %s: %s\n", command, new_command if $debug
+
+      new_command
+    else
+      command
+    end
+  end
+end
+
+class Config
+  def initialize
+    @alias = {}
+  end
+
+  def load(file)
+    File.open(file) { |f|
+      f.each { |line|
+        line.strip!
+        next if /^#/ =~ line
+
+        if m = line.match(/^([^\s=]+)\s*=\s*(.+)/)
+          @alias[m[1]] = m[2]
+        end
+      }
+    }
+  rescue => e
+    # ignore
+  end
+
+  def alias(key)
+    @alias[key]
+  end
+
+  def alias?(key)
+    @alias.key?(key)
   end
 end
 
