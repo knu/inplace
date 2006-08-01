@@ -280,7 +280,9 @@ class FileFilter
           replace(tmpfile, outfile, stat)
         }
 
-        info "#{origfile}: edited"
+        newstat = File.stat(outfile)
+
+        info "#{origfile}: edited (%d bytes -> %d bytes)", stat.size, newstat.size
       end
     else
       flunk origfile, "command exited with %d", $?.exitstatus
