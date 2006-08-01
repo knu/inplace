@@ -9,13 +9,13 @@
 .Nd edits files in-place through given filter commands
 .Sh SYNOPSIS
 .Nm
-.Op Fl Lfnstvz
+.Op Fl DLfnstvz
 .Op Fl b Ar suffix
 .Fl e Ar commandline
 .Op Oo Fl e Ar commandline Oc ...
 .Op Ar file ...
 .Nm
-.Op Fl Lfnstvz
+.Op Fl DLfnstvz
 .Op Fl b Ar suffix
 .Ar commandline
 .Op Ar file ...
@@ -58,6 +58,10 @@ The following command line arguments are supported:
 .It Fl h
 .It Fl -help
 Show help and exit.
+.Pp
+.It Fl D
+.It Fl -debug
+Turn on debug output.
 .Pp
 .It Fl L
 .It Fl -dereference

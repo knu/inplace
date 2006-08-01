@@ -87,6 +87,12 @@ usage: #{MYNAME} [-Lfnstvz] [-b SUFFIX] COMMANDLINE [file ...]
       $backup_suffix = s
     }
 
+    opts.def_option("-D", "--debug",
+                    "Turn on debug mode.") {
+      |b|
+      $debug = b and $verbose = true
+    }
+
     opts.def_option("-e", "--execute=COMMANDLINE",
                     "Run COMMANDLINE for each file in which the following#{NEXTLINE}placeholders can be used:#{NEXTLINE}  %0: replaced by the original file path#{NEXTLINE}  %1: replaced by the source file path#{NEXTLINE}  %2: replaced by the destination file path#{NEXTLINE}  %%: replaced by a %#{NEXTLINE}Missing %2 indicates %1 is modified destructively,#{NEXTLINE}and missing both %1 and %2 implies \"(...) < %1 > %2\"#{NEXTLINE}around the command line.") {
       |s|
@@ -249,7 +255,7 @@ class FileFilter
     $tmpfiles.add(tmpfile)
 
     if destructive?
-      info "cp(%s, %s)", infile, tmpfile
+      debug "cp(%s, %s)", infile, tmpfile
       FileUtils.cp(infile, tmpfile) unless $dry_run
       filtercommand = @formatter.format(origfile, tmpfile)
     else
@@ -265,15 +271,17 @@ class FileFilter
         flunk origfile, "empty output"
       end unless $dry_run
 
-      if FileUtils.cmp(infile, tmpfile)
-        flunk origfile, "unchanged"
-      end unless $dry_run
+      if !$dry_run && FileUtils.cmp(infile, tmpfile)
+        info "#{origfile}: unchanged"
+      else
+        stat = File.stat(infile)
 
-      stat = File.stat(infile)
+        uninterruptible {
+          replace(tmpfile, outfile, stat)
+        }
 
-      uninterruptible {
-        replace(tmpfile, outfile, stat)
-      }
+        info "#{origfile}: edited"
+      end
     else
       flunk origfile, "command exited with %d", $?.exitstatus
     end
@@ -294,6 +302,10 @@ class FileFilter
   end
 
   private
+  def debug(fmt, *args)
+    puts sprintf(fmt, *args) if $debug
+  end
+
   def info(fmt, *args)
     puts sprintf(fmt, *args) if $verbose
   end
@@ -303,7 +315,7 @@ class FileFilter
   end
 
   def run(command)
-    info "system(%s)", command
+    debug "system(%s)", command
     $dry_run or system(command)
   end
 
@@ -311,11 +323,11 @@ class FileFilter
     if $backup_suffix && !$backup_suffix.empty? && !$tmpfiles.include?(file2)
       bakfile = file2 + $backup_suffix
 
-      info "mv(%s, %s)", file2, bakfile
+      debug "mv(%s, %s)", file2, bakfile
       FileUtils.mv(file2, bakfile) unless $dry_run 
     end
 
-    info "mv(%s, %s)", file1, file2
+    debug "mv(%s, %s)", file1, file2
     FileUtils.mv(file1, file2) unless $dry_run
 
     preserve(file2, stat)
@@ -323,7 +335,7 @@ class FileFilter
 
   def preserve(file, stat)
     if $preserve_time
-      info "utime(%s, %s, %s)",
+      debug "utime(%s, %s, %s)",
            stat.atime.strftime("%Y-%m-%d %T"),
            stat.mtime.strftime("%Y-%m-%d %T"), file
       File.utime stat.atime, stat.mtime, file unless $dry_run
@@ -332,14 +344,14 @@ class FileFilter
     mode = stat.mode
 
     begin
-      info "chown(%d, %d, %s)", stat.uid, stat.gid, file
+      debug "chown(%d, %d, %s)", stat.uid, stat.gid, file
       File.chown stat.uid, stat.gid, file unless $dry_run
     rescue Errno::EPERM
-      # If chown fails, we must give up with setuid/setgid bits
+      # If chown fails, discard setuid/setgid bits
       mode &= 01777
     end
 
-    info "chmod(%o, %s)", stat.mode, file
+    debug "chmod(%o, %s)", stat.mode, file
     File.chmod stat.mode, file unless $dry_run
   end
 
