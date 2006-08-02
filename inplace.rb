@@ -80,13 +80,16 @@ usage: #{MYNAME} [-Lfnstvz] [-b SUFFIX] COMMANDLINE [file ...]
     }
 
     opts.def_option("-L", "--dereference",
-                    "Dereference using realpath(3) and edit the original#{NEXTLINE}file for each symlink.") {
+                    "Dereference using realpath(3) and edit the original" << NEXTLINE <<
+                    "file for each symlink.") {
       |b|
       $dereference = b
     }
 
     opts.def_option("-b", "--backup-suffix=SUFFIX",
-                    "Create a backup file with the SUFFIX for each file.#{NEXTLINE}Backup files will be written over existing files,#{NEXTLINE}if any.") {
+                    "Create a backup file with the SUFFIX for each file." << NEXTLINE <<
+                    "Backup files will be written over existing files," << NEXTLINE <<
+                    "if any.") {
       |s|
       $backup_suffix = s
     }
@@ -98,7 +101,15 @@ usage: #{MYNAME} [-Lfnstvz] [-b SUFFIX] COMMANDLINE [file ...]
     }
 
     opts.def_option("-e", "--execute=COMMANDLINE",
-                    "Run COMMANDLINE for each file in which the following#{NEXTLINE}placeholders can be used:#{NEXTLINE}  %0: replaced by the original file path#{NEXTLINE}  %1: replaced by the source file path#{NEXTLINE}  %2: replaced by the destination file path#{NEXTLINE}  %%: replaced by a %#{NEXTLINE}Missing %2 indicates %1 is modified destructively,#{NEXTLINE}and missing both %1 and %2 implies \"(...) < %1 > %2\"#{NEXTLINE}around the command line.") {
+                    "Run COMMANDLINE for each file in which the following" << NEXTLINE <<
+                    "placeholders can be used:" << NEXTLINE <<
+                    "  %0: replaced by the original file path" << NEXTLINE <<
+                    "  %1: replaced by the source file path" << NEXTLINE <<
+                    "  %2: replaced by the destination file path" << NEXTLINE <<
+                    "  %%: replaced by a %" << NEXTLINE <<
+                    "Missing %2 indicates %1 is modified destructively," << NEXTLINE <<
+                    "and missing both %1 and %2 implies \"(...) < %1 > %2\"" << NEXTLINE <<
+                    "around the command line.") {
       |s|
       $filters << FileFilter.new($config.expand_alias(s))
     }
@@ -116,7 +127,8 @@ usage: #{MYNAME} [-Lfnstvz] [-b SUFFIX] COMMANDLINE [file ...]
     }
 
     opts.def_option("-s", "--same-directory",
-                    "Create a temporary file in the same directory as#{NEXTLINE}each replaced file.") {
+                    "Create a temporary file in the same directory as" << NEXTLINE <<
+                    "each replaced file.") {
       |b|
       $same_directory = b
     }
