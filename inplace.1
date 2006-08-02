@@ -9,13 +9,13 @@
 .Nd edits files in-place through given filter commands
 .Sh SYNOPSIS
 .Nm
-.Op Fl DLfnstvz
+.Op Fl DLfinstvz
 .Op Fl b Ar suffix
 .Fl e Ar commandline
 .Op Oo Fl e Ar commandline Oc ...
 .Op Ar file ...
 .Nm
-.Op Fl DLfnstvz
+.Op Fl DLfinstvz
 .Op Fl b Ar suffix
 .Ar commandline
 .Op Ar file ...
@@ -27,7 +27,18 @@ commands preserving the original file attributes.  Mode and ownership
 (user and group) are preserved by default, and time (access and
 modification) by choice.
 .Pp
-A single command may be specified as the first argument to
+Unless the
+.Fl b
+or
+.Fl s
+option is specified, inode numbers of edited are also preserved.  If
+you want to use those options and yet preserve inode numbers, specify
+the
+.Fl i
+option at the same time.
+.Pp
+As for filter commands, a single command may be specified as the first
+argument to
 .Nm .
 Multiple commands may be specified by using the
 .Fl e
@@ -74,6 +85,11 @@ dereference each symlink using realpath(3) and edit the original file.
 .It Fl -backup-suffix Ar SUFFIX
 Create a backup file with the given suffix for each file.  Note that
 backup files will be written over existing files, if any.
+.Pp
+If this option is specified, edited files will have newly assigned
+inode numbers.  To prevent this, use the
+.Fl i
+option.
 .Pp
 .It Fl e Ar COMMANDLINE
 .It Fl -execute Ar COMMANDLINE
@@ -134,6 +150,14 @@ By default,
 does not perform editing if a file is not writable.  This switch makes
 it force editing even if a file to process is read-only.
 .Pp
+.It Fl i
+.It Fl -preserve-inode
+Preserve the inode number of each file even when the
+.Fl b
+or
+.Fl s
+option is specified.
+.Pp
 .It Fl n
 .It Fl -dry-run
 Do not perform any destructive operation and just show what would have
@@ -149,6 +173,11 @@ slow.
 .Pp
 Another reason to use this switch is when the temporary directory does
 not have sufficient disk space for a resulted file.
+.Pp
+If this option is specified, edited files will have newly assigned
+inode numbers.  To prevent this, use the
+.Fl i
+option.
 .Pp
 .It Fl t
 .It Fl -preserve-timestamp
