@@ -121,7 +121,8 @@ usage: #{MYNAME} [-Lfinstvz] [-b SUFFIX] COMMANDLINE [file ...]
     }
 
     opts.def_option("-i", "--preserve-inode",
-                    "Preserve the inode number of each file.") {
+                    "Preserve the inode number of each file even when" << NEXTLINE <<
+                    "-b or -s is specified.") {
       |b|
       $preserve_inode = b
     }
