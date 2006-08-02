@@ -51,15 +51,15 @@ def init
   $backup_suffix = nil
   $debug = $verbose =
     $dereference = $force = $dry_run = $same_directory =
-    $preserve_time = $accept_zero = false
+    $preserve_inode = $preserve_time = $accept_zero = false
   $filters = []
   $tmpfiles = Set.new
 end
 
 def main(argv)
   usage = <<-"EOF"
-usage: #{MYNAME} [-Lfnstvz] [-b SUFFIX] COMMANDLINE [file ...]
-       #{MYNAME} [-Lfnstvz] [-b SUFFIX] [-e COMMANDLINE] [file ...]
+usage: #{MYNAME} [-Lfinstvz] [-b SUFFIX] COMMANDLINE [file ...]
+       #{MYNAME} [-Lfinstvz] [-b SUFFIX] [-e COMMANDLINE] [file ...]
   EOF
 
   banner = <<-"EOF"
@@ -118,6 +118,12 @@ usage: #{MYNAME} [-Lfnstvz] [-b SUFFIX] COMMANDLINE [file ...]
                     "Force editing even if a file is read-only.") {
       |b|
       $force = b
+    }
+
+    opts.def_option("-i", "--preserve-inode",
+                    "Preserve the inode number of each file.") {
+      |b|
+      $preserve_inode = b
     }
 
     opts.def_option("-n", "--dry-run",
@@ -338,15 +344,30 @@ class FileFilter
   end
 
   def replace(file1, file2, stat)
-    if $backup_suffix && !$backup_suffix.empty? && !$tmpfiles.include?(file2)
+    file2_is_original = !$tmpfiles.include?(file2)
+
+    if $backup_suffix && !$backup_suffix.empty? && file2_is_original
       bakfile = file2 + $backup_suffix
 
-      debug "mv(%s, %s)", file2, bakfile
-      FileUtils.mv(file2, bakfile) unless $dry_run 
+      if $preserve_inode
+        debug "cp(%s, %s)", file2, bakfile
+        FileUtils.cp(file2, bakfile, :preserve => true) unless $dry_run 
+      else
+        debug "mv(%s, %s)", file2, bakfile
+        FileUtils.mv(file2, bakfile) unless $dry_run
+      end
     end
 
-    debug "mv(%s, %s)", file1, file2
-    FileUtils.mv(file1, file2) unless $dry_run
+    if file2_is_original && $preserve_inode
+      debug "cp(%s, %s)", file1, file2
+      FileUtils.cp(file1, file2) unless $dry_run
+
+      debug "rm(%s)", file1
+      FileUtils.rm(file1) unless $dry_run      
+    else
+      debug "mv(%s, %s)", file1, file2
+      FileUtils.mv(file1, file2) unless $dry_run
+    end
 
     preserve(file2, stat)
   end

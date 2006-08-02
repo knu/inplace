@@ -3,8 +3,8 @@
 # $Id$
 
 flunk () {
-  echo "$0: $@" >&2
-  exit 1
+    echo "$0: $@" >&2
+    exit 1
 }
 
 srcdir=$(dirname $(realpath $0))
@@ -47,8 +47,40 @@ terminate () {
     rm -rf $testdir
 }
 
+inplace_flags=
+
 inplace () {
-    $srcdir/inplace.rb "$@" >/dev/null 2>&1
+    local file i1 i2 has_b has_i has_s
+    has_b=0
+    has_i=0
+    has_s=0
+
+    file="$($ruby -e 'puts ARGV.last' -- "$@")"
+    i1="$(inode_of "$file")"
+    $srcdir/inplace.rb $inplace_flags "$@" >/dev/null 2>&1
+    i2="$(inode_of "$file")"
+
+    if echo " $inplace_flags" | fgrep -qe " -i"; then
+        has_i=1
+    fi
+
+    if echo " $inplace_flags" | fgrep -qe " -s"; then
+        has_s=1
+    fi
+
+    if echo " $inplace_flags $@" | fgrep -qe " -b.bak"; then
+        has_b=1
+    fi
+
+    if [ $i1 != $i2 ]; then
+        if [ $has_b = 0 -a $has_s = 0  -o  $has_i = 1 ]; then
+            echo "inode changed!" >&2
+        fi
+    fi
+}
+
+inode_of () {
+    expr "$(ls -i "$@")" : '\([0-9]*\)'
 }
 
 cmp_file () {
@@ -216,18 +248,25 @@ main () {
     n=7
     error=0
 
-    for i in $(jot $n 1 $n); do
-	echo -n "test$i..."
-	setup
+    for inplace_flags in '' '-s' '-i' '-i -s'; do
+        for i in $(jot $n 1 $n); do
+	    if [ X"$inplace_flags" != X"" ]; then
+                echo -n "test$i with $inplace_flags..."
+            else
+	        echo -n "test$i..."
+            fi
 
-	if eval test$i; then
-	    echo "ok"
-	else
-	    echo "failed!"
-            error=1
-	fi
+	    setup
 
-	teardown
+	    if eval test$i; then
+	        echo "ok"
+	    else
+	        echo "failed!"
+                error=1
+	    fi
+
+	    teardown
+        done
     done
 
     terminate
