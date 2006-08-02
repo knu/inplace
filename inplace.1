@@ -108,15 +108,18 @@ alias defined in a configuration file,
 The configuration file syntax is the usual:
 .Bl -bullet
 .It
-White spaces at the beginning or the end of a line are stripped off.
+Each alias definition is a name/value pair separated with an
+.Dq = ,
+one per line.
+.It
+White spaces at the beginning or the end of a line, and around
+assignment separators
+.Pf ( Dq = )
+are stripped off.
 .It
 Lines starting with a
-.Sq #
-is ignored.
-.It
-Each alias definition is a name/value pair separated with a
-.Sq = ,
-one per line.
+.Dq #
+are ignored.
 .El
 .Pp
 This option can be specified many times, and they will be executed in
