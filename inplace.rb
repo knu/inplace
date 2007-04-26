@@ -314,11 +314,27 @@ class FileFilter
     $tmpfiles.delete(tmpfile)
   end
 
+  def self.mktemp_class(ext)
+    (@@mktemp_class ||= {})[ext] ||= Class.new(Tempfile) { |klass|
+      klass.const_set(:EXT, ext)
+
+      def make_tmpname(basename, n)
+        super + self.class::EXT
+      end
+    }
+  end
+
   def self.mktemp_for(outfile)
-    if $same_directory
-      tmpf = Tempfile.new(MYNAME, File.dirname(outfile))
+    if outfile.match(/(\.[^.]+)$/)
+      tmpf_class = mktemp_class($1)
     else
-      tmpf = Tempfile.new(MYNAME)
+      tmpf_class = Tempfile
+    end
+
+    if $same_directory
+      tmpf = tmpf_class.new(MYNAME, File.dirname(outfile))
+    else
+      tmpf = tmpf_class.new(MYNAME)
     end
 
     tmpf.close
