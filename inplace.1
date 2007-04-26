@@ -114,6 +114,9 @@ around the command line.
 The destination file is always an empty temporary file, and the source
 file is either the original file or a temporary copy file.
 .Pp
+Every temporary file has the same suffix as the original file, so that
+file name aware programs can play nicely with it.
+.Pp
 Placed file paths will be properly shell escaped with
 .Pf \e 's
 as necessary.
@@ -235,6 +238,7 @@ and
 .Bl -tag -width "~/.inplace"
 .It Pa ~/.inplace
 Location of the configuration file.
+.El
 .Sh ENVIRONMENT
 .Bl -tag -width "TMPDIR" -compact
 .It Ev TMPDIR
