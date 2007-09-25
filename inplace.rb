@@ -80,8 +80,7 @@ usage: #{MYNAME} [-Lfinstvz] [-b SUFFIX] COMMANDLINE [file ...]
     }
 
     opts.def_option("-L", "--dereference",
-                    "Dereference using realpath(3) and edit the original" << NEXTLINE <<
-                    "file for each symlink.") {
+                    "Edit the original file for each symlink.") {
       |b|
       $dereference = b
     }
@@ -250,10 +249,9 @@ class FileFilter
       $dereference or
         flunk origfile, "symlink"
 
-      $have_realpath or
-        flunk origfile, "symlink; realpath(3) is required to handle it"
+      require 'pathname'
 
-      outfile = File.realpath(outfile) or
+      outfile = Pathname.new(outfile).realpath or
         flunk origfile, "symlink unresolvable"
 
       st = File.stat(outfile)
@@ -540,28 +538,6 @@ class Config
 
   def alias?(key)
     @alias.key?(key)
-  end
-end
-
-class File
-  begin
-    require 'dl/import'
-  
-    module LIBC
-      PATH_MAX = 1024
-
-      extend DL::Importable
-      dlload "libc.so"
-      extern "char *realpath(char *, char *)"
-    end
-  
-    def File.realpath(path)
-      return LIBC.realpath(path, "\0" * LIBC::PATH_MAX)
-    end
-
-    $have_realpath = true
-  rescue LoadError, RuntimeError
-    $have_realpath = false
   end
 end
 
