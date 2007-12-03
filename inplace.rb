@@ -31,8 +31,8 @@
 # $Idaemons: /home/cvs/inplace/inplace.rb,v 1.7 2004/04/21 13:25:51 knu Exp $
 # $Id$
 
-if RUBY_VERSION < "1.8.0"
-  STDERR.puts "Ruby 1.8 or later is required."
+if RUBY_VERSION < "1.8.2"
+  STDERR.puts "Ruby 1.8.2 or later is required."
   exit 255
 end
 
@@ -303,7 +303,7 @@ class FileFilter
 
         newstat = File.stat(outfile)
 
-        info "#{origfile}: edited (%d bytes -> %d bytes)", stat.size, newstat.size
+        info "#{origfile}: edited (%d bytes -> %d bytes)", stat.size, newstat.size unless $dry_run
       end
     else
       flunk origfile, "command exited with %d", $?.exitstatus
@@ -312,27 +312,30 @@ class FileFilter
     $tmpfiles.delete(tmpfile)
   end
 
-  def self.mktemp_class(ext)
-    (@@mktemp_class ||= {})[ext] ||= Class.new(Tempfile) { |klass|
-      klass.const_set(:EXT, ext)
-
-      def make_tmpname(basename, n)
-        super + self.class::EXT
-      end
-    }
-  end
-
   def self.mktemp_for(outfile)
-    if outfile.match(/(\.[^.\/]+)$/)
-      tmpf_class = mktemp_class($1)
-    else
-      tmpf_class = Tempfile
+    tmpf_class = Tempfile
+    tmpf_template = MYNAME
+
+    if m = File.basename(outfile).match(/(\..+)$/)
+      ext = m[1]
+
+      if RUBY_VERSION >= "1.8.7"
+        tmpf_template = [MYNAME, ext]
+      else
+        tmpf_class = (@@mktemp_class ||= {})[ext] ||= Class.new(Tempfile) { |klass|
+          klass.const_set(:EXT, ext)
+
+          def make_tmpname(basename, n)
+            super + self.class::EXT
+          end
+        }
+      end
     end
 
     if $same_directory
-      tmpf = tmpf_class.new(MYNAME, File.dirname(outfile))
+      tmpf = tmpf_class.new(tmpf_template, File.dirname(outfile))
     else
-      tmpf = tmpf_class.new(MYNAME)
+      tmpf = tmpf_class.new(tmpf_template)
     end
 
     tmpf.close
@@ -342,7 +345,7 @@ class FileFilter
 
   private
   def debug(fmt, *args)
-    puts sprintf(fmt, *args) if $debug
+    puts sprintf(fmt, *args) if $debug || $dry_run
   end
 
   def info(fmt, *args)
@@ -354,7 +357,7 @@ class FileFilter
   end
 
   def run(command)
-    debug "system(%s)", command
+    debug "command: %s", command
     $dry_run or system(command)
   end
 
@@ -365,22 +368,22 @@ class FileFilter
       bakfile = file2 + $backup_suffix
 
       if $preserve_inode
-        debug "cp(%s, %s)", file2, bakfile
+        debug "copy: %s -> %s ", file2.shellescape, bakfile.shellescape
         FileUtils.cp(file2, bakfile, :preserve => true) unless $dry_run 
       else
-        debug "mv(%s, %s)", file2, bakfile
+        debug "move: %s -> %s", file2.shellescape, bakfile.shellescape
         FileUtils.mv(file2, bakfile) unless $dry_run
       end
     end
 
     if file2_is_original && $preserve_inode
-      debug "cp(%s, %s)", file1, file2
+      debug "copy: %s -> %s", file1.shellescape, file2.shellescape
       FileUtils.cp(file1, file2) unless $dry_run
 
-      debug "rm(%s)", file1
+      debug "remove: %s", file1.shellescape
       FileUtils.rm(file1) unless $dry_run      
     else
-      debug "mv(%s, %s)", file1, file2
+      debug "move: %s -> %s", file1.shellescape, file2.shellescape
       FileUtils.mv(file1, file2) unless $dry_run
     end
 
@@ -389,23 +392,23 @@ class FileFilter
 
   def preserve(file, stat)
     if $preserve_time
-      debug "utime(%s, %s, %s)",
-           stat.atime.strftime("%Y-%m-%d %T"),
-           stat.mtime.strftime("%Y-%m-%d %T"), file
+      debug "utime: %s/%s %s",
+           stat.atime.strftime("%Y-%m-%dT%T"),
+           stat.mtime.strftime("%Y-%m-%dT%T"), file.shellescape
       File.utime stat.atime, stat.mtime, file unless $dry_run
     end
 
     mode = stat.mode
 
     begin
-      debug "chown(%d, %d, %s)", stat.uid, stat.gid, file
+      debug "chown: %d:%d %s", stat.uid, stat.gid, file.shellescape
       File.chown stat.uid, stat.gid, file unless $dry_run
     rescue Errno::EPERM
       # If chown fails, discard setuid/setgid bits
       mode &= 01777
     end
 
-    debug "chmod(%o, %s)", stat.mode, file
+    debug "chmod: %o %s", stat.mode, file.shellescape
     File.chmod stat.mode, file unless $dry_run
   end
 
@@ -444,13 +447,13 @@ class FileFilter
           when '%'
             s << c
           when '0'
-            s << sh_escape(origfile)
+            s << origfile.shellescape
           when '1'
-            s << sh_escape(infile)
+            s << infile.shellescape
 
             arity_bits |= 0x1
           when '2'
-            s << sh_escape(outfile)
+            s << outfile.shellescape
             arity_bits |= 0x2
           else
             raise ArgumentError, "invalid placeholder specification (%#{c}): #{@fmt}"
@@ -472,9 +475,28 @@ class FileFilter
 
       s
     end
+  end
+end
 
-    def sh_escape(str)
-      str.gsub(/([^A-Za-z0-9_\-.,:\/@])/n, "\\\\\\1")
+if RUBY_VERSION >= "1.8.7"
+  require 'shellwords'
+else
+  class String
+    def shellescape
+      # An empty argument will be skipped, so return empty quotes.
+      return "''" if empty?
+
+      str = dup
+
+      # Process as a single byte sequence because not all shell
+      # implementations are multibyte aware.
+      str.gsub!(/([^A-Za-z0-9_\-.,:\/@\n])/n, "\\\\\\1")
+
+      # A LF cannot be escaped with a backslash because a backslash + LF
+      # combo is regarded as line continuation and simply ignored.
+      str.gsub!(/\n/, "'\n'")
+
+      return str
     end
   end
 end
@@ -503,7 +525,7 @@ class Config
     if @alias.key?(command)
       new_command = @alias[command]
 
-      printf "expanding alias: %s: %s\n", command, new_command if $debug
+      info "expanding alias: %s: %s\n", command, new_command
 
       new_command
     else
