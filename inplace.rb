@@ -36,7 +36,7 @@ if RUBY_VERSION < "1.8.0"
   exit 255
 end
 
-MYVERSION = "1.2.0"
+MYVERSION = "1.2.1"
 MYREVISION = %w$Rev$[1]
 MYDATE = %w$Date$[1]
 MYNAME = File.basename($0)
@@ -323,7 +323,7 @@ class FileFilter
   end
 
   def self.mktemp_for(outfile)
-    if outfile.match(/(\.[^.]+)$/)
+    if outfile.match(/(\.[^.\/]+)$/)
       tmpf_class = mktemp_class($1)
     else
       tmpf_class = Tempfile
