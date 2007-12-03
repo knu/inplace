@@ -3,7 +3,7 @@
 #
 # inplace.rb - edits files in-place through given filter commands
 #
-# Copyright (c) 2004, 2005, 2006 Akinori MUSHA
+# Copyright (c) 2004, 2005, 2006, 2007 Akinori MUSHA
 #
 # All rights reserved.
 #
