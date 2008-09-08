@@ -42,16 +42,6 @@ MYDATE = %w$Date$[1]
 MYNAME = File.basename($0)
 
 require "optparse"
-require "set"
-
-def setup
-  $backup_suffix = nil
-  $debug = $verbose =
-    $dereference = $force = $dry_run = $same_directory =
-    $preserve_inode = $preserve_time = $accept_zero = false
-  $filters = []
-  $tmpfiles = Set.new
-end
 
 def main(argv)
   usage = <<-"EOF"
@@ -217,6 +207,17 @@ rescue OptionParser::ParseError => e
 rescue => e
   STDERR.puts "#{MYNAME}: #{e}"
   exit 1
+end
+
+require "set"
+
+def setup
+  $backup_suffix = nil
+  $debug = $verbose =
+    $dereference = $force = $dry_run = $same_directory =
+    $preserve_inode = $preserve_time = $accept_zero = false
+  $filters = []
+  $tmpfiles = Set.new
 end
 
 require 'tempfile'
