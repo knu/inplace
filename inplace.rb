@@ -3,7 +3,7 @@
 #
 # inplace.rb - edits files in-place through given filter commands
 #
-# Copyright (c) 2004, 2005, 2006, 2007 Akinori MUSHA
+# Copyright (c) 2004, 2005, 2006, 2007, 2008 Akinori MUSHA
 #
 # All rights reserved.
 #
@@ -44,10 +44,7 @@ MYNAME = File.basename($0)
 require "optparse"
 require "set"
 
-COLUMNSIZE = 24
-NEXTLINE = "\n%*s" % [4 + COLUMNSIZE + 1, '']
-
-def init
+def setup
   $backup_suffix = nil
   $debug = $verbose =
     $dereference = $force = $dry_run = $same_directory =
@@ -72,93 +69,95 @@ usage: #{MYNAME} [-Lfinstvz] [-b SUFFIX] COMMANDLINE [file ...]
   $config = Config.new
   $config.load(File.expand_path("~/.inplace"))
 
-  opts = OptionParser.new(banner, COLUMNSIZE) { |opts|
-    opts.def_option("-h", "--help",
-                    "Show this message.") {
+  opts = OptionParser.new(banner, 24) { |opts|
+    nextline = "\n" << opts.summary_indent << " " * opts.summary_width << " "
+
+    opts.on("-h", "--help",
+      "Show this message.") {
       print opts
       exit 0
     }
 
-    opts.def_option("-L", "--dereference",
-                    "Edit the original file for each symlink.") {
+    opts.on("-L", "--dereference",
+      "Edit the original file for each symlink.") {
       |b|
       $dereference = b
     }
 
-    opts.def_option("-b", "--backup-suffix=SUFFIX",
-                    "Create a backup file with the SUFFIX for each file." << NEXTLINE <<
-                    "Backup files will be written over existing files," << NEXTLINE <<
-                    "if any.") {
+    opts.on("-b", "--backup-suffix=SUFFIX",
+      "Create a backup file with the SUFFIX for each file." << nextline <<
+      "Backup files will be written over existing files," << nextline <<
+      "if any.") {
       |s|
       $backup_suffix = s
     }
 
-    opts.def_option("-D", "--debug",
-                    "Turn on debug mode.") {
+    opts.on("-D", "--debug",
+      "Turn on debug mode.") {
       |b|
       $debug = b and $verbose = true
     }
 
-    opts.def_option("-e", "--execute=COMMANDLINE",
-                    "Run COMMANDLINE for each file in which the following" << NEXTLINE <<
-                    "placeholders can be used:" << NEXTLINE <<
-                    "  %0: replaced by the original file path" << NEXTLINE <<
-                    "  %1: replaced by the source file path" << NEXTLINE <<
-                    "  %2: replaced by the destination file path" << NEXTLINE <<
-                    "  %%: replaced by a %" << NEXTLINE <<
-                    "Missing %2 indicates %1 is modified destructively," << NEXTLINE <<
-                    "and missing both %1 and %2 implies \"(...) < %1 > %2\"" << NEXTLINE <<
-                    "around the command line.") {
+    opts.on("-e", "--execute=COMMANDLINE",
+      "Run COMMANDLINE for each file in which the following" << nextline <<
+      "placeholders can be used:" << nextline <<
+      "  %0: replaced by the original file path" << nextline <<
+      "  %1: replaced by the source file path" << nextline <<
+      "  %2: replaced by the destination file path" << nextline <<
+      "  %%: replaced by a %" << nextline <<
+      "Missing %2 indicates %1 is modified destructively," << nextline <<
+      "and missing both %1 and %2 implies \"(...) < %1 > %2\"" << nextline <<
+      "around the command line.") {
       |s|
       $filters << FileFilter.new($config.expand_alias(s))
     }
 
-    opts.def_option("-f", "--force",
-                    "Force editing even if a file is read-only.") {
+    opts.on("-f", "--force",
+      "Force editing even if a file is read-only.") {
       |b|
       $force = b
     }
 
-    opts.def_option("-i", "--preserve-inode",
-                    "Preserve the inode number of each file even when" << NEXTLINE <<
-                    "-b or -s is specified.") {
+    opts.on("-i", "--preserve-inode",
+      "Preserve the inode number of each file even when" << nextline <<
+      "-b or -s is specified.") {
       |b|
       $preserve_inode = b
     }
 
-    opts.def_option("-n", "--dry-run",
-                    "Just show what would have been done.") {
+    opts.on("-n", "--dry-run",
+      "Just show what would have been done.") {
       |b|
       $dry_run = b and $verbose = true
     }
 
-    opts.def_option("-s", "--same-directory",
-                    "Create a temporary file in the same directory as" << NEXTLINE <<
-                    "each replaced file.") {
+    opts.on("-s", "--same-directory",
+      "Create a temporary file in the same directory as" << nextline <<
+      "each replaced file.") {
       |b|
       $same_directory = b
     }
 
-    opts.def_option("-t", "--preserve-timestamp",
-                    "Preserve the modification time of each file.") {
+    opts.on("-t", "--preserve-timestamp",
+      "Preserve the modification time of each file.") {
       |b|
       $preserve_time = b
     }
 
-    opts.def_option("-v", "--verbose",
-                    "Turn on verbose mode.") {
+    opts.on("-v", "--verbose",
+      "Turn on verbose mode.") {
       |b|
       $verbose = b
     }
 
-    opts.def_option("-z", "--accept-empty",
-                    "Accept empty (zero-sized) output.") {
+    opts.on("-z", "--accept-empty",
+      "Accept empty (zero-sized) output.") {
       |b|
       $accept_zero = b
     }
   }
 
-  init()
+  setup()
 
   files = opts.order(*argv)
 
