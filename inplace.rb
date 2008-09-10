@@ -452,7 +452,6 @@ class FileFilter
             s << origfile.shellescape
           when '1'
             s << infile.shellescape
-
             arity_bits |= 0x1
           when '2'
             s << outfile.shellescape
@@ -510,7 +509,7 @@ class Config
 
   def load(file)
     File.open(file) { |f|
-      f.each { |line|
+      f.each_line { |line|
         line.strip!
         next if /^#/ =~ line
 
@@ -520,7 +519,7 @@ class Config
       }
     }
   rescue => e
-    # ignore
+    warn "eror in loading `%s': %s", file, e.to_s
   end
 
   def expand_alias(command)
@@ -533,35 +532,6 @@ class Config
     else
       command
     end
-  end
-end
-
-class Config
-  def initialize
-    @alias = {}
-  end
-
-  def load(file)
-    File.open(file) { |f|
-      f.each { |line|
-        line.strip!
-        next if /^#/ =~ line
-
-        if m = line.match(/^([^\s=]+)\s*=\s*(.+)/)
-          @alias[m[1]] = m[2]
-        end
-      }
-    }
-  rescue => e
-    # ignore
-  end
-
-  def alias(key)
-    @alias[key]
-  end
-
-  def alias?(key)
-    @alias.key?(key)
   end
 end
 
