@@ -251,9 +251,9 @@ main () {
     for inplace_flags in '' '-s' '-i' '-i -s'; do
         for i in $(jot $n 1 $n); do
 	    if [ X"$inplace_flags" != X"" ]; then
-                echo -n "test$i with $inplace_flags..."
+                printf "%s with %s..." "test$i" "$inplace_flags"
             else
-	        echo -n "test$i..."
+	        printf "%s..." "test$i"
             fi
 
 	    setup
