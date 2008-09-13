@@ -143,7 +143,7 @@ usage: #{MYNAME} [-Lfinstvz] [-b SUFFIX] COMMANDLINE [file ...]
     opts.on("-z", "--accept-empty",
       "Accept empty (zero-sized) output.") {
       |b|
-      $accept_zero = b
+      $accept_empty = b
     }
   }
 
@@ -215,7 +215,7 @@ def setup
   $backup_suffix = nil
   $debug = $verbose =
     $dereference = $force = $dry_run = $same_directory =
-    $preserve_inode = $preserve_time = $accept_zero = false
+    $preserve_inode = $preserve_time = $accept_empty = false
   $filters = []
   $tmpfiles = Set.new
 end
@@ -290,7 +290,7 @@ class FileFilter
         flunk origfile, "output file removed"
       end
 
-      if !$accept_zero && File.zero?(tmpfile)
+      if !$accept_empty && File.zero?(tmpfile)
         flunk origfile, "empty output"
       end unless $dry_run
 
@@ -358,6 +358,10 @@ class FileFilter
     STDERR.puts "warning: " + sprintf(fmt, *args)
   end
 
+  def error(fmt, *args)
+    STDERR.puts "error: " + sprintf(fmt, *args)
+  end
+
   def run(command)
     debug "command: %s", command
     $dry_run or system(command)
@@ -379,14 +383,32 @@ class FileFilter
     end
 
     if file2_is_original && $preserve_inode
-      debug "copy: %s -> %s", file1.shellescape, file2.shellescape
-      FileUtils.cp(file1, file2) unless $dry_run
+      begin
+        debug "copy: %s -> %s", file1.shellescape, file2.shellescape
+        FileUtils.cp(file1, file2) unless $dry_run
+      rescue => e
+        if $tmpfiles.include?(file1)
+          error "%s: failed to overwrite; left result file: %s", file2, file1
+        else
+          error "%s: failed to overwrite", file2
+        end
+        exit! 1
+      end
 
       debug "remove: %s", file1.shellescape
       FileUtils.rm(file1) unless $dry_run      
     else
-      debug "move: %s -> %s", file1.shellescape, file2.shellescape
-      FileUtils.mv(file1, file2) unless $dry_run
+      begin
+        debug "move: %s -> %s", file1.shellescape, file2.shellescape
+        FileUtils.mv(file1, file2) unless $dry_run
+      rescue => e
+        if $tmpfiles.include?(file1)
+          error "%s: failed to overwrite; left result file: %s", file2, file1
+        else
+          error "%s: failed to overwrite", file2
+        end
+        exit! 1
+      end
     end
 
     preserve(file2, stat)
@@ -519,7 +541,7 @@ class Config
       }
     }
   rescue => e
-    warn "eror in loading `%s': %s", file, e.to_s
+    # ignore
   end
 
   def expand_alias(command)
@@ -541,7 +563,7 @@ $uninterruptible = false
   trap(sig) {
     unless $uninterruptible
       STDERR.puts "Interrupted."
-      exit
+      exit 130
     end
   }
 }
