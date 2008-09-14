@@ -57,7 +57,8 @@ usage: #{MYNAME} [-Lfinstvz] [-b SUFFIX] COMMANDLINE [file ...]
   EOF
 
   $config = Config.new
-  $config.load(File.expand_path("~/.inplace"))
+  file = File.expand_path("~/.inplace")
+  $config.load(file) if File.exist?(file)
 
   opts = OptionParser.new(banner, 24) { |opts|
     nextline = "\n" << opts.summary_indent << " " * opts.summary_width << " "
@@ -540,8 +541,6 @@ class Config
         end
       }
     }
-  rescue => e
-    # ignore
   end
 
   def expand_alias(command)
