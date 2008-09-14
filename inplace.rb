@@ -342,7 +342,7 @@ class FileFilter
 
     tmpf.close
 
-    tmpf
+    return tmpf
   end
 
   private
@@ -496,7 +496,7 @@ class FileFilter
         @arity = 2
       end
 
-      s
+      return s
     end
   end
 end
