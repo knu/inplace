@@ -375,7 +375,7 @@ class FileFilter
       bakfile = file2 + $backup_suffix
 
       if $preserve_inode
-        debug "copy: %s -> %s ", file2.shellescape, bakfile.shellescape
+        debug "copy: %s -> %s", file2.shellescape, bakfile.shellescape
         FileUtils.cp(file2, bakfile, :preserve => true) unless $dry_run 
       else
         debug "move: %s -> %s", file2.shellescape, bakfile.shellescape
@@ -389,7 +389,7 @@ class FileFilter
         FileUtils.cp(file1, file2) unless $dry_run
       rescue => e
         if $tmpfiles.include?(file1)
-          error "%s: failed to overwrite; left result file: %s", file2, file1
+          error "%s: failed to overwrite; result file left: %s", file2, file1
         else
           error "%s: failed to overwrite", file2
         end
@@ -404,7 +404,7 @@ class FileFilter
         FileUtils.mv(file1, file2) unless $dry_run
       rescue => e
         if $tmpfiles.include?(file1)
-          error "%s: failed to overwrite; left result file: %s", file2, file1
+          error "%s: failed to overwrite; result file left: %s", file2, file1
         else
           error "%s: failed to overwrite", file2
         end
