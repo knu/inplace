@@ -110,8 +110,7 @@ usage: #{MYNAME} [-Lfinstvz] [-b SUFFIX] COMMANDLINE [file ...]
     }
 
     opts.on("-i", "--preserve-inode",
-      "Preserve the inode number of each file even when" << nextline <<
-      "-b or -s is specified.") {
+      "Make sure to preserve the inode number of each file") {
       |b|
       $preserve_inode = b
     }

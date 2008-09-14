@@ -27,15 +27,11 @@ commands preserving the original file attributes.  Mode and ownership
 (user and group) are preserved by default, and time (access and
 modification) by choice.
 .Pp
-Unless the
-.Fl b
-or
-.Fl s
-option is specified, inode numbers of edited files are also preserved.
-If you want to use those options and yet preserve inode numbers,
-specify the
+Depending on where to make a temporary file to replace the
+corresponding original file, the inode number may change after
+replacement.  To prevent this, specify the
 .Fl i
-option at the same time.
+option and the inode number of each edited file will be preserved.
 .Pp
 As for filter commands, a single command may be specified as the first
 argument to
@@ -85,11 +81,6 @@ dereference each symlink using realpath(3) and edit the original file.
 .It Fl -backup-suffix Ar SUFFIX
 Create a backup file with the given suffix for each file.  Note that
 backup files will be written over existing files, if any.
-.Pp
-If this option is specified, edited files will have newly assigned
-inode numbers.  To prevent this, use the
-.Fl i
-option.
 .Pp
 .It Fl e Ar COMMANDLINE
 .It Fl -execute Ar COMMANDLINE
@@ -155,11 +146,7 @@ it force editing even if a file to process is read-only.
 .Pp
 .It Fl i
 .It Fl -preserve-inode
-Preserve the inode number of each file even when the
-.Fl b
-or
-.Fl s
-option is specified.
+Make sure to preserve the inode number of each file.
 .Pp
 .It Fl n
 .It Fl -dry-run
