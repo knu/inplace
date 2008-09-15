@@ -224,8 +224,8 @@ require 'tempfile'
 require 'fileutils'
 
 class FileFilter
-  def initialize(commandline)
-    @formatter = Formatter.new(commandline)
+  def initialize(template)
+    @formatter = Formatter.new(template)
   end
 
   def destructive?
@@ -437,9 +437,8 @@ class FileFilter
   end
 
   class Formatter
-    def initialize(fmt)
-      @fmt = fmt.dup.freeze
-      @arity = nil
+    def initialize(template)
+      @template = template.dup
 
       begin
         self.format("0", "1", "2")
@@ -448,25 +447,24 @@ class FileFilter
       end
 
       if @arity == 0
-        @fmt = "(#{@fmt}) < %1 > %2"
+        @template = "(#{@template}) < %1 > %2"
         @arity = 2
       end
     end
 
-    attr_reader :arity
+    attr_reader :template, :arity
 
     def format(origfile, infile, outfile = nil)
       s = ''
-      fmt = @fmt.dup
-
+      template = @template.dup
       arity_bits = 0
 
-      until fmt.empty?
-        fmt.sub!(/\A([^%]+)/) {
+      until template.empty?
+        template.sub!(/\A([^%]+)/) {
           s << $1
           ''
         }
-        fmt.sub!(/\A%(.)/) {
+        template.sub!(/\A%(.)/) {
           case c = $1
           when '%'
             s << c
@@ -479,7 +477,7 @@ class FileFilter
             s << outfile.shellescape
             arity_bits |= 0x2
           else
-            raise ArgumentError, "invalid placeholder specification (%#{c}): #{@fmt}"
+            raise ArgumentError, "invalid placeholder specification (%#{c}): #{@template}"
           end
           ''
         }
@@ -491,7 +489,7 @@ class FileFilter
       when 0x1
         @arity = 1
       when 0x2
-        raise ArgumentError, "%1 is missing while %2 is specified: #{@fmt}"
+        raise ArgumentError, "%1 is missing while %2 is specified: #{@template}"
       when 0x3
         @arity = 2
       end
