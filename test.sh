@@ -7,7 +7,7 @@ flunk () {
     exit 1
 }
 
-srcdir=$(dirname $(realpath $0))
+srcdir="$(cd "$(dirname "$0")" && pwd)" || exit 1
 testdir=$srcdir/t
 ruby=${RUBY:-$(which ruby)}
 
