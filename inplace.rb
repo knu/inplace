@@ -56,6 +56,8 @@ usage: #{MYNAME} [-Lfinstvz] [-b SUFFIX] COMMANDLINE [file ...]
 #{usage}
   EOF
 
+  filters = []
+
   $config = Config.new
   file = File.expand_path("~/.inplace")
   $config.load(file) if File.exist?(file)
@@ -100,7 +102,7 @@ usage: #{MYNAME} [-Lfinstvz] [-b SUFFIX] COMMANDLINE [file ...]
       "and missing both %1 and %2 implies \"(...) < %1 > %2\"" << nextline <<
       "around the command line.") {
       |s|
-      $filters << FileFilter.new($config.expand_alias(s))
+      filters << FileFilter.new($config.expand_alias(s))
     }
 
     opts.on("-f", "--force",
@@ -151,8 +153,8 @@ usage: #{MYNAME} [-Lfinstvz] [-b SUFFIX] COMMANDLINE [file ...]
 
   files = opts.order(*argv)
 
-  if $filters.empty? && !files.empty?
-    $filters << FileFilter.new($config.expand_alias(files.shift))
+  if filters.empty? && !files.empty?
+    filters << FileFilter.new($config.expand_alias(files.shift))
   end
 
   if files.empty?
@@ -161,13 +163,13 @@ usage: #{MYNAME} [-Lfinstvz] [-b SUFFIX] COMMANDLINE [file ...]
     exit 2
   end
 
-  case $filters.size
+  case filters.size
   when 0
     STDERR.puts "No filter command line to execute given.", ""
     print opts
     exit 1
   when 1
-    filter = $filters.first
+    filter = filters.first
 
     files.each { |file|
       begin
@@ -178,14 +180,12 @@ usage: #{MYNAME} [-Lfinstvz] [-b SUFFIX] COMMANDLINE [file ...]
     }
   else
     files.each { |file|
-      tmpf = FileFilter.mktemp_for(file)
-      tmpfile = tmpf.path
-      $tmpfiles.add(tmpfile)
+      tmpfile = FileFilter.make_tmpfile_for(file)
 
-      first, last = 0, $filters.size - 1
+      first, last = 0, filters.size - 1
 
       begin
-        $filters.each_with_index { |filter, i|
+        filters.each_with_index { |filter, i|
           if i == first
             filter.filter(file, file, tmpfile)
           elsif i == last
@@ -196,8 +196,6 @@ usage: #{MYNAME} [-Lfinstvz] [-b SUFFIX] COMMANDLINE [file ...]
         }
       rescue => e
         STDERR.puts "#{file}: skipped: #{e}"
-      ensure
-        $tmpfiles.delete(tmpfile)
       end
     }
   end
@@ -209,17 +207,14 @@ rescue => e
   exit 1
 end
 
-require "set"
-
 def setup
   $backup_suffix = nil
   $debug = $verbose =
     $dereference = $force = $dry_run = $same_directory =
     $preserve_inode = $preserve_time = $accept_empty = false
-  $filters = []
-  $tmpfiles = Set.new
 end
 
+require 'set'
 require 'tempfile'
 require 'fileutils'
 
@@ -273,9 +268,7 @@ class FileFilter
         flunk origfile, "read-only file"
     end
 
-    tmpf = FileFilter.mktemp_for(outfile)
-    tmpfile = tmpf.path
-    $tmpfiles.add(tmpfile)
+    tmpfile = FileFilter.make_tmpfile_for(outfile)
 
     if destructive?
       debug "cp(%s, %s)", infile, tmpfile
@@ -310,11 +303,15 @@ class FileFilter
     else
       flunk origfile, "command exited with %d", $?.exitstatus
     end
-  ensure
-    $tmpfiles.delete(tmpfile)
   end
 
-  def self.mktemp_for(outfile)
+  @@tmpfiles = Set.new
+
+  def tmpfile?(file)
+    @@tmpfiles.include?(file)
+  end
+
+  def self.make_tmpfile_for(outfile)
     tmpf_class = Tempfile
     tmpf_template = MYNAME
 
@@ -324,7 +321,7 @@ class FileFilter
       if RUBY_VERSION >= "1.8.7"
         tmpf_template = [MYNAME, ext]
       else
-        tmpf_class = (@@mktemp_class ||= {})[ext] ||= Class.new(Tempfile) { |klass|
+        tmpf_class = (@@tmpfile_class ||= {})[ext] ||= Class.new(Tempfile) { |klass|
           klass.const_set(:EXT, ext)
 
           def make_tmpname(basename, n)
@@ -341,8 +338,10 @@ class FileFilter
     end
 
     tmpf.close
+    path = tmpf.path
+    @@tmpfiles << path
 
-    return tmpf
+    return path
   end
 
   private
@@ -368,7 +367,7 @@ class FileFilter
   end
 
   def replace(file1, file2, stat)
-    file2_is_original = !$tmpfiles.include?(file2)
+    file2_is_original = !tmpfile?(file2)
 
     if $backup_suffix && !$backup_suffix.empty? && file2_is_original
       bakfile = file2 + $backup_suffix
@@ -387,7 +386,7 @@ class FileFilter
         debug "copy: %s -> %s", file1.shellescape, file2.shellescape
         FileUtils.cp(file1, file2) unless $dry_run
       rescue => e
-        if $tmpfiles.include?(file1)
+        if tmpfile?(file1)
           error "%s: failed to overwrite; result file left: %s", file2, file1
         else
           error "%s: failed to overwrite", file2
@@ -402,7 +401,7 @@ class FileFilter
         debug "move: %s -> %s", file1.shellescape, file2.shellescape
         FileUtils.mv(file1, file2) unless $dry_run
       rescue => e
-        if $tmpfiles.include?(file1)
+        if tmpfile?(file1)
           error "%s: failed to overwrite; result file left: %s", file2, file1
         else
           error "%s: failed to overwrite", file2
