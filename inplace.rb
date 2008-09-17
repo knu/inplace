@@ -248,10 +248,11 @@ class FileFilter
 
       require 'pathname'
 
-      realpath = Pathname.new(outfile).realpath or
-        flunk origfile, "symlink unresolvable"
-
-      outfile = realpath.to_s
+      begin
+        outfile = Pathname.new(outfile).realpath.to_s
+      rescue => e
+        flunk origfile, "symlink unresolvable: %s", e
+      end
 
       st = File.stat(outfile)
 
