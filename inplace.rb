@@ -357,7 +357,7 @@ class FileFilter
 
         if $preserve_inode
           debug "copy: %s -> %s", file2.shellescape, bakfile.shellescape
-          FileUtils.cp(file2, bakfile) unless $dry_run 
+          FileUtils.cp(file2, bakfile, :preserve => true) unless $dry_run 
         else
           debug "move: %s -> %s", file2.shellescape, bakfile.shellescape
           FileUtils.mv(file2, bakfile) unless $dry_run
