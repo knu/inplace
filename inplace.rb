@@ -240,6 +240,8 @@ class FileFilter
       flunk origfile, "file not found"
     end
 
+    outfile_is_original = !tmpfile?(outfile)
+
     if File.symlink?(outfile)
       $dereference or
         flunk origfile, "symlink"
@@ -272,7 +274,7 @@ class FileFilter
 
     if destructive?
       debug "cp(%s, %s)", infile, tmpfile
-      FileUtils.cp(infile, tmpfile) unless $dry_run
+      FileUtils.cp(infile, tmpfile)
       filtercommand = @formatter.format(origfile, tmpfile)
     else
       filtercommand = @formatter.format(origfile, infile, tmpfile)
@@ -285,21 +287,22 @@ class FileFilter
 
       if !$accept_empty && File.zero?(tmpfile)
         flunk origfile, "empty output"
-      end unless $dry_run
-
-      if !$dry_run && FileUtils.cmp(infile, tmpfile)
-        info "#{origfile}: unchanged"
-      else
-        stat = File.stat(infile)
-
-        uninterruptible {
-          replace(tmpfile, outfile, stat)
-        }
-
-        newstat = File.stat(outfile)
-
-        info "#{origfile}: edited (%d bytes -> %d bytes)", stat.size, newstat.size unless $dry_run
       end
+
+      if outfile_is_original && FileUtils.cmp(origfile, tmpfile)
+        flunk origfile, "unchanged"
+      end
+
+      stat = File.stat(infile)
+      newstat = File.stat(tmpfile) if $dry_run
+
+      uninterruptible {
+        replace(tmpfile, outfile, stat)
+      }
+
+      newstat = File.stat(outfile) unless $dry_run
+
+      info "#{origfile}: edited (%d bytes -> %d bytes)", stat.size, newstat.size
     else
       flunk origfile, "command exited with %d", $?.exitstatus
     end
@@ -349,7 +352,7 @@ class FileFilter
 
   def run(command)
     debug "command: %s", command
-    $dry_run or system(command)
+    system(command)
   end
 
   class OverwriteError < RuntimeError
@@ -363,7 +366,7 @@ class FileFilter
 
       if $preserve_inode
         debug "copy: %s -> %s", file2.shellescape, bakfile.shellescape
-        FileUtils.cp(file2, bakfile, :preserve => true) unless $dry_run 
+        FileUtils.cp(file2, bakfile) unless $dry_run 
       else
         debug "move: %s -> %s", file2.shellescape, bakfile.shellescape
         FileUtils.mv(file2, bakfile) unless $dry_run
