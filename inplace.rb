@@ -352,6 +352,9 @@ class FileFilter
     $dry_run or system(command)
   end
 
+  class OverwriteError < RuntimeError
+  end
+
   def replace(file1, file2, stat)
     file2_is_original = !tmpfile?(file2)
 
@@ -367,33 +370,34 @@ class FileFilter
       end
     end
 
-    if file2_is_original && $preserve_inode
-      begin
+    begin
+      if file2_is_original && $preserve_inode
         debug "copy: %s -> %s", file1.shellescape, file2.shellescape
-        FileUtils.cp(file1, file2) unless $dry_run
-      rescue => e
-        if tmpfile?(file1)
-          error "%s: failed to overwrite; result file left: %s", file2, file1
-        else
-          error "%s: failed to overwrite", file2
-        end
-        exit! 1
-      end
+        begin
+          FileUtils.cp(file1, file2)
+        rescue => e
+          error "%s", e
+          raise OverwriteError
+        end unless $dry_run
 
-      debug "remove: %s", file1.shellescape
-      FileUtils.rm(file1) unless $dry_run      
-    else
-      begin
+        debug "remove: %s", file1.shellescape
+        FileUtils.rm(file1) unless $dry_run      
+      else
         debug "move: %s -> %s", file1.shellescape, file2.shellescape
-        FileUtils.mv(file1, file2) unless $dry_run
-      rescue => e
-        if tmpfile?(file1)
-          error "%s: failed to overwrite; result file left: %s", file2, file1
-        else
-          error "%s: failed to overwrite", file2
-        end
-        exit! 1
+        begin
+          FileUtils.mv(file1, file2)
+        rescue => e
+          error "%s", e
+          raise OverwriteError
+        end unless $dry_run
       end
+    rescue OverwriteError => e
+      if tmpfile?(file1)
+        error "%s: failed to overwrite; result file left: %s", file2, file1
+      else
+        error "%s: failed to overwrite", file2
+      end
+      exit! 1
     end
 
     preserve(file2, stat)
