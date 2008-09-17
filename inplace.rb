@@ -217,6 +217,7 @@ end
 require 'set'
 require 'tempfile'
 require 'fileutils'
+require 'pathname'
 
 class FileFilter
   def initialize(template)
@@ -245,8 +246,6 @@ class FileFilter
     if File.symlink?(outfile)
       $dereference or
         flunk origfile, "symlink"
-
-      require 'pathname'
 
       begin
         outfile = Pathname.new(outfile).realpath.to_s
