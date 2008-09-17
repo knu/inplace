@@ -359,7 +359,10 @@ class FileFilter
   end
 
   def replace(file1, file2, stat)
-    if !tmpfile?(file2)
+    if tmpfile?(file2)
+      debug "move: %s -> %s", file1.shellescape, file2.shellescape
+      FileUtils.mv(file1, file2, :preserve => false)
+    else
       if $backup_suffix && !$backup_suffix.empty?
         bakfile = file2 + $backup_suffix
 
@@ -375,12 +378,12 @@ class FileFilter
       begin
         if $preserve_inode
           debug "copy: %s -> %s", file1.shellescape, file2.shellescape
-          FileUtils.cp(file1, file2) unless $dry_run
+          FileUtils.cp(file1, file2, :preserve => false) unless $dry_run
           debug "remove: %s", file1.shellescape
           FileUtils.rm(file1) unless $dry_run
         else
           debug "move: %s -> %s", file1.shellescape, file2.shellescape
-          FileUtils.mv(file1, file2) unless $dry_run
+          FileUtils.mv(file1, file2, :preserve => false) unless $dry_run
         end
       rescue => e
         error "%s: failed to overwrite: %s", file2, e
@@ -389,9 +392,6 @@ class FileFilter
         end
         exit! 1
       end
-    else
-      debug "move: %s -> %s", file1.shellescape, file2.shellescape
-      FileUtils.mv(file1, file2)
     end
 
     preserve(file2, stat)
