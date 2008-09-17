@@ -355,9 +355,6 @@ class FileFilter
     system(command)
   end
 
-  class OverwriteError < RuntimeError
-  end
-
   def replace(file1, file2, stat)
     if tmpfile?(file2)
       debug "move: %s -> %s", file1.shellescape, file2.shellescape
