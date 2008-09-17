@@ -228,10 +228,6 @@ class FileFilter
     @formatter.arity == 1
   end
 
-  def flunk(origfile, fmt, *args)
-    raise "#{origfile}: " << sprintf(fmt, *args)
-  end
-
   def filter!(origfile, file)
     filter(origfile, file, file)
   end
@@ -348,6 +344,10 @@ class FileFilter
 
   def error(fmt, *args)
     STDERR.puts "error: " + sprintf(fmt, *args)
+  end
+
+  def flunk(origfile, fmt, *args)
+    raise "#{origfile}: " << sprintf(fmt, *args)
   end
 
   def run(command)
