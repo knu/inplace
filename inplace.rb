@@ -238,8 +238,9 @@ class FileFilter
     end
 
     outfile_is_original = !tmpfile?(outfile)
+    outfile_stat = File.stat(outfile)
 
-    if File.symlink?(outfile)
+    if outfile_stat.symlink?
       $dereference or
         flunk origfile, "symlink"
 
@@ -249,20 +250,16 @@ class FileFilter
         flunk origfile, "symlink unresolvable: %s", e
       end
 
-      st = File.stat(outfile)
-
-      st.file? or
+      outfile_stat.file? or
         flunk origfile, "symlink to a non-regular file"
 
-      $force || st.writable? or
+      $force || outfile_stat.writable? or
         flunk origfile, "symlink to a read-only file"
     else
-      st = File.stat(outfile)
-
-      st.file? or
+      outfile_stat.file? or
         flunk origfile, "non-regular file"
 
-      $force || st.writable? or
+      $force || outfile_stat.writable? or
         flunk origfile, "read-only file"
     end
 
