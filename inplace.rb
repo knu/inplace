@@ -387,9 +387,7 @@ class FileFilter
         end
       rescue => e
         error "%s: failed to overwrite: %s", file2, e
-        if tmpfile?(file1)
-          error "%s: result file left: %s", file2, file1
-        end
+        error "%s: result file left: %s", file2, file1
         exit! 1
       end
     end
