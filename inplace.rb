@@ -359,9 +359,7 @@ class FileFilter
   end
 
   def replace(file1, file2, stat)
-    file2_is_original = !tmpfile?(file2)
-
-    if file2_is_original
+    if !tmpfile?(file2)
       if $backup_suffix && !$backup_suffix.empty?
         bakfile = file2 + $backup_suffix
 
