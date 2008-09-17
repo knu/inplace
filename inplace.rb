@@ -311,36 +311,22 @@ class FileFilter
     @@tmpfiles.include?(file)
   end
 
-  def self.make_tmpfile_for(outfile)
-    tmpf_class = Tempfile
-    tmpf_template = MYNAME
+  TMPNAME_BASE = MYNAME.tr('.', '-')
 
+  def self.make_tmpfile_for(outfile)
     if m = File.basename(outfile).match(/(\..+)$/)
       ext = m[1]
-
-      if RUBY_VERSION >= "1.8.7"
-        tmpf_template = [MYNAME, ext]
-      else
-        tmpf_class = (@@tmpfile_class ||= {})[ext] ||= Class.new(Tempfile) { |klass|
-          klass.const_set(:EXT, ext)
-
-          def make_tmpname(basename, n)
-            super + self.class::EXT
-          end
-        }
-      end
-    end
-
-    if $same_directory
-      tmpf = tmpf_class.new(tmpf_template, File.dirname(outfile))
     else
-      tmpf = tmpf_class.new(tmpf_template)
+      ext = ''
     end
-
+    if $same_directory
+      tmpf = Tempfile.new([TMPNAME_BASE, ext], File.dirname(outfile))
+    else
+      tmpf = Tempfile.new([TMPNAME_BASE, ext])
+    end
     tmpf.close
     path = tmpf.path
     @@tmpfiles << path
-
     return path
   end
 
@@ -517,6 +503,20 @@ else
       str.gsub!(/\n/, "'\n'")
 
       return str
+    end
+  end
+
+  class Tempfile
+    alias orig_make_tmpname make_tmpname
+
+    def make_tmpname(basename, n)
+      case basename
+      when Array
+        prefix, suffix = *basename
+        make_tmpname(prefix, n) + suffix
+      else
+        orig_make_tmpname(basename, n).tr('.', '-')
+      end
     end
   end
 end
