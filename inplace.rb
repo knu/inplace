@@ -370,34 +370,27 @@ class FileFilter
       end
     end
 
-    begin
-      if file2_is_original && $preserve_inode
-        debug "copy: %s -> %s", file1.shellescape, file2.shellescape
-        begin
-          FileUtils.cp(file1, file2)
-        rescue => e
-          error "%s", e
-          raise OverwriteError
-        end unless $dry_run
-
-        debug "remove: %s", file1.shellescape
-        FileUtils.rm(file1) unless $dry_run      
-      else
-        debug "move: %s -> %s", file1.shellescape, file2.shellescape
-        begin
-          FileUtils.mv(file1, file2)
-        rescue => e
-          error "%s", e
-          raise OverwriteError
-        end unless $dry_run
+    if file2_is_original
+      begin
+        if $preserve_inode
+          debug "copy: %s -> %s", file1.shellescape, file2.shellescape
+          FileUtils.cp(file1, file2) unless $dry_run
+          debug "remove: %s", file1.shellescape
+          FileUtils.rm(file1) unless $dry_run
+        else
+          debug "move: %s -> %s", file1.shellescape, file2.shellescape
+          FileUtils.mv(file1, file2) unless $dry_run
+        end
+      rescue => e
+        error "%s: failed to overwrite: %s", file2, e
+        if tmpfile?(file1)
+          error "%s: result file left: %s", file2, file1
+        end
+        exit! 1
       end
-    rescue OverwriteError => e
-      if tmpfile?(file1)
-        error "%s: failed to overwrite; result file left: %s", file2, file1
-      else
-        error "%s: failed to overwrite", file2
-      end
-      exit! 1
+    else
+      debug "move: %s -> %s", file1.shellescape, file2.shellescape
+      FileUtils.mv(file1, file2)
     end
 
     preserve(file2, stat)
