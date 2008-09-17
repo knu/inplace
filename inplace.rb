@@ -238,7 +238,7 @@ class FileFilter
     end
 
     outfile_is_original = !tmpfile?(outfile)
-    outfile_stat = File.stat(outfile)
+    outfile_stat = File.lstat(outfile)
 
     if outfile_stat.symlink?
       $dereference or
@@ -246,22 +246,17 @@ class FileFilter
 
       begin
         outfile = Pathname.new(outfile).realpath.to_s
+        outfile_stat = File.lstat(outfile)
       rescue => e
         flunk origfile, "symlink unresolvable: %s", e
       end
-
-      outfile_stat.file? or
-        flunk origfile, "symlink to a non-regular file"
-
-      $force || outfile_stat.writable? or
-        flunk origfile, "symlink to a read-only file"
-    else
-      outfile_stat.file? or
-        flunk origfile, "non-regular file"
-
-      $force || outfile_stat.writable? or
-        flunk origfile, "read-only file"
     end
+
+    outfile_stat.file? or
+      flunk origfile, "symlink to a non-regular file"
+
+    $force || outfile_stat.writable? or
+      flunk origfile, "symlink to a read-only file"
 
     tmpfile = FileFilter.make_tmpfile_for(outfile)
 
