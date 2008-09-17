@@ -73,22 +73,19 @@ usage: #{MYNAME} [-Lfinstvz] [-b SUFFIX] COMMANDLINE [file ...]
 
     opts.on("-L", "--dereference",
       "Edit the original file for each symlink.") {
-      |b|
-      $dereference = b
+      |b| $dereference = b
     }
 
     opts.on("-b", "--backup-suffix=SUFFIX",
       "Create a backup file with the SUFFIX for each file." << nextline <<
       "Backup files will be written over existing files," << nextline <<
       "if any.") {
-      |s|
-      $backup_suffix = s
+      |s| $backup_suffix = s
     }
 
     opts.on("-D", "--debug",
       "Turn on debug mode.") {
-      |b|
-      $debug = b and $verbose = true
+      |b| $debug = b and $verbose = true
     }
 
     opts.on("-e", "--execute=COMMANDLINE",
@@ -101,51 +98,43 @@ usage: #{MYNAME} [-Lfinstvz] [-b SUFFIX] COMMANDLINE [file ...]
       "Missing %2 indicates %1 is modified destructively," << nextline <<
       "and missing both %1 and %2 implies \"(...) < %1 > %2\"" << nextline <<
       "around the command line.") {
-      |s|
-      filters << FileFilter.new($config.expand_alias(s))
+      |s| filters << FileFilter.new($config.expand_alias(s))
     }
 
     opts.on("-f", "--force",
       "Force editing even if a file is read-only.") {
-      |b|
-      $force = b
+      |b| $force = b
     }
 
     opts.on("-i", "--preserve-inode",
-      "Make sure to preserve the inode number of each file") {
-      |b|
-      $preserve_inode = b
+      "Make sure to preserve the inode number of each file.") {
+      |b| $preserve_inode = b
     }
 
     opts.on("-n", "--dry-run",
       "Just show what would have been done.") {
-      |b|
-      $dry_run = b and $verbose = true
+      |b| $dry_run = b and $verbose = true
     }
 
     opts.on("-s", "--same-directory",
       "Create a temporary file in the same directory as" << nextline <<
       "each replaced file.") {
-      |b|
-      $same_directory = b
+      |b| $same_directory = b
     }
 
     opts.on("-t", "--preserve-timestamp",
       "Preserve the modification time of each file.") {
-      |b|
-      $preserve_time = b
+      |b| $preserve_time = b
     }
 
     opts.on("-v", "--verbose",
       "Turn on verbose mode.") {
-      |b|
-      $verbose = b
+      |b| $verbose = b
     }
 
     opts.on("-z", "--accept-empty",
       "Accept empty (zero-sized) output.") {
-      |b|
-      $accept_empty = b
+      |b| $accept_empty = b
     }
   }
 
