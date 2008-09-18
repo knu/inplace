@@ -391,8 +391,8 @@ class FileFilter
       mode &= 01777
     end
 
-    debug "chmod: %o %s", stat.mode, file.shellescape
-    File.chmod stat.mode, file unless $dry_run
+    debug "chmod: %o %s", mode, file.shellescape
+    File.chmod mode, file unless $dry_run
   end
 
   class Formatter
