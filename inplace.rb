@@ -252,34 +252,31 @@ class FileFilter
     if destructive?
       debug "cp(%s, %s)", infile, tmpfile
       FileUtils.cp(infile, tmpfile)
-      filtercommand = @formatter.format(origfile, tmpfile)
+      command = @formatter.format(origfile, tmpfile)
     else
-      filtercommand = @formatter.format(origfile, infile, tmpfile)
+      command = @formatter.format(origfile, infile, tmpfile)
     end
 
-    if run(filtercommand)
-      if !File.file?(tmpfile)
+    if run(command)
+      File.file?(tmpfile) or
         flunk origfile, "output file removed"
-      end
 
-      if !$accept_empty && File.zero?(tmpfile)
+      !$accept_empty && File.zero?(tmpfile) and
         flunk origfile, "empty output"
-      end
 
-      if outfile_is_original && FileUtils.cmp(origfile, tmpfile)
+      outfile_is_original && FileUtils.identical?(origfile, tmpfile) and
         flunk origfile, "unchanged"
-      end
 
       stat = File.stat(infile)
-      newstat = File.stat(tmpfile) if $dry_run
+      newsize = File.size(tmpfile) if $dry_run
 
       uninterruptible {
         replace(tmpfile, outfile, stat)
       }
 
-      newstat = File.stat(outfile) unless $dry_run
+      newsize = File.size(outfile) unless $dry_run
 
-      info "#{origfile}: edited (%d bytes -> %d bytes)", stat.size, newstat.size
+      info "%s: edited (%d bytes -> %d bytes)", origfile, stat.size, newsize
     else
       flunk origfile, "command exited with %d", $?.exitstatus
     end
@@ -387,7 +384,6 @@ class FileFilter
       debug "chown: %d:%d %s", stat.uid, stat.gid, file.shellescape
       File.chown stat.uid, stat.gid, file unless $dry_run
     rescue Errno::EPERM
-      # If chown fails, discard setuid/setgid bits
       mode &= 01777
     end
 
