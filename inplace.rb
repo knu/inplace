@@ -522,13 +522,19 @@ class Config
   end
 end
 
-$uninterruptible = false
+$uninterruptible = $interrupt = false
+
+def interrupt
+  STDERR.puts "Interrupted."
+  exit 130
+end
 
 [:SIGINT, :SIGQUIT, :SIGTERM].each { |sig|
   trap(sig) {
-    unless $uninterruptible
-      STDERR.puts "Interrupted."
-      exit 130
+    if $uninterruptible
+      $interrupt = true
+    else
+      interrupt
     end
   }
 }
@@ -538,6 +544,8 @@ def uninterruptible
   $uninterruptible = true
 
   yield
+
+  interrupt if $interrupt
 ensure
   $uninterruptible = orig
 end
