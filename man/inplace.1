@@ -27,16 +27,15 @@ commands preserving the original file attributes.  Mode and ownership
 (user and group) are preserved by default, and time (access and
 modification) by choice.
 .Pp
-Depending on where to make a temporary file to replace the
-corresponding original file, the inode number may change after
-replacement.  To prevent this, specify the
+Inode numbers will change by default, but there is a
 .Fl i
-option and the inode number of each edited file will be preserved.
+option with which given the inode number of each edited file will be
+preserved.
 .Pp
 As for filter commands, a single command may be specified as the first
 argument to
 .Nm .
-Multiple commands may be specified by using the
+To pass many filter commands, specify each followed by the
 .Fl e
 option.
 .Pp
@@ -75,7 +74,8 @@ Turn on debug output.
 By default,
 .Nm
 ignores non-regular files including symlinks, but this switch makes it
-dereference each symlink using realpath(3) and edit the original file.
+resolve (dereference) each symlink using realpath(3) and edit the
+original file.
 .Pp
 .It Fl b Ar SUFFIX
 .It Fl -backup-suffix Ar SUFFIX
@@ -87,50 +87,38 @@ backup files will be written over existing files, if any.
 Specify a filter command line to run for each file in which the following placeholders can be used:
 .Bl -tag -offset indent -nested
 .It Cm %0
-replaced by the original file path
+replaced by the original file path, shell escaped with
+.Pf \e 's
+as necessary
 .It Cm %1
-replaced by the source file path
+replaced by the source file path, shell escaped with
+.Pf \e 's
+as necessary
 .It Cm %2
-replaced by the destination file path
+replaced by the destination file path, shell escaped with
+.Pf \e 's
+as necessary
 .It Cm %%
 replaced by
 .Ql %
 .El
 .Pp
-Missing %2 indicates %1 is modified destructively, and missing both %1
-and %2 implies
+Omission of %2 indicates %1 should be modified destructively, and
+omission of both %1 and %2 implies
 .Dq Li "(...) < %1 > %2"
 around the command line.
 .Pp
-The destination file is always an empty temporary file, and the source
-file is either the original file or a temporary copy file.
+When the filter command is run, the destination file is always an
+empty temporary file, and the source file is either the original file
+or a temporary copy file.
 .Pp
 Every temporary file has the same suffix as the original file, so that
 file name aware programs can play nicely with it.
 .Pp
-Placed file paths will be properly shell escaped with
-.Pf \e 's
-as necessary.
-.Pp
 Instead of specifying a whole command line, you can use a command
 alias defined in a configuration file,
 .Pa ~/.inplace .
-The configuration file syntax is the usual:
-.Bl -bullet
-.It
-Each alias definition is a name/value pair separated with an
-.Dq = ,
-one per line.
-.It
-White spaces at the beginning or the end of a line, and around
-assignment separators
-.Pf ( Dq = )
-are stripped off.
-.It
-Lines starting with a
-.Dq #
-are ignored.
-.El
+See the FILES section for the file format.
 .Pp
 This option can be specified many times, and they will be executed in
 sequence.  A file is only replaced if all of them succeeds.
@@ -161,7 +149,7 @@ This may speed up the performance when the directory in question is on
 a partition that is fast enough and the system temporary directory is
 slow.
 .Pp
-Another reason to use this switch is when the temporary directory does
+This switch can be effectively used when the temporary directory does
 not have sufficient disk space for a resulted file.
 .Pp
 If this option is specified, edited files will have newly assigned
@@ -182,7 +170,8 @@ Turn on verbose mode.
 By default,
 .Nm
 does not replace the original file when a resulted file is empty in
-size.  This switch makes it accept empty (zero-sized) output and
+size because it is likely that there is a mistake in the filter
+command.  This switch makes it accept empty (zero-sized) output and
 replace the original file with it.
 .El
 .Sh EXAMPLES
@@ -193,8 +182,8 @@ Sort files in-place using
 .Pp
 .Dl inplace sort file1 file2 file3
 .Pp
-Below is the same thing as above, except for passing input files via
-the command line argument:
+Below works the same as above, passing each input file via the command
+line argument:
 .Pp
 .Dl inplace 'sort %1 > %2' file1 file2 file3
 .Pp
@@ -224,7 +213,22 @@ and
 .Sh FILES
 .Bl -tag -width "~/.inplace"
 .It Pa ~/.inplace
-Location of the configuration file.
+The configuration file, which syntax is described as follows:
+.Bl -bullet
+.It
+Each alias definition is a name/value pair separated with an
+.Dq = ,
+one per line.
+.It
+White spaces at the beginning or the end of a line, and around
+assignment separators
+.Pf ( Dq = )
+are stripped off.
+.It
+Lines starting with a
+.Dq #
+are ignored.
+.El
 .El
 .Sh ENVIRONMENT
 .Bl -tag -width "TMPDIR" -compact
@@ -232,7 +236,7 @@ Location of the configuration file.
 .It Ev TMP
 .It Ev TEMP
 Temporary directory candidates where
-.Nm 
+.Nm
 attempts to create intermediate output files, in that order.  If none
 is available and writable,
 .Pa /tmp
@@ -247,4 +251,4 @@ is specified, they will not be used.
 .Sh AUTHORS
 .An Akinori MUSHA Aq knu@iDaemons.org
 .Sh BUGS
-There may be.  Use at your own risk.
+There may always be some bugs.  Use at your own risk.
