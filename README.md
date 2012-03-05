@@ -20,14 +20,12 @@ filter commands preserving the original file attributes.  Mode and
 ownership (user and group) are preserved by default, and time (access
 and modification) by choice.
 
-Depending on where to make a temporary file to replace the
-corresponding original file, the inode number may change after
-replacement.  To prevent this, specify the `-i` option and the inode
-number of each edited file will be preserved.
+Inode numbers will change by default, but there is a `-i` option with
+which given the inode number of each edited file will be preserved.
 
 As for filter commands, a single command may be specified as the first
-argument to inplace.  Multiple commands may be specified by using the
-`-e` option.
+argument to inplace.  To pass many filter commands, specify each
+followed by the `-e` option.
 
 There are some cases where inplace does not replace a file, such as
 when:
@@ -59,7 +57,7 @@ The following command line arguments are supported:
 *   `--dereference`
 
     By default, inplace ignores non-regular files including symlinks,
-    but this switch makes it dereference each symlink using
+    but this switch makes it resolve (dereference) each symlink using
     `realpath(3)` and edit the original file.
 
 *   `-b SUFFIX`
@@ -76,44 +74,37 @@ The following command line arguments are supported:
 
     *   `%0`
 
-        replaced by the original file path
+        replaced by the original file path, shell escaped with `\`'s
+        as necessary
 
     *   `%1`
 
-        replaced by the source file path
+        replaced by the source file path, shell escaped with `\`'s as
+        necessary
 
     *   `%2`
 
-        replaced by the destination file path
+        replaced by the destination file path, shell escaped with
+        `\`'s as necessary
 
     *   `%%`
 
         replaced by `%`
 
-    Missing `%2` indicates `%1` is modified destructively, and missing
-    both `%1` and `%2` implies `(...) < %1 > %2` around the command
-    line.
+    Omission of `%2` indicates `%1` should be modified destructively,
+    and omission of both `%1` and `%2` implies `(...) < %1 > %2`
+    around the command line.
 
-    The destination file is always an empty temporary file, and the
-    source file is either the original file or a temporary copy file.
+    When the filter command is run, the destination file is always an
+    empty temporary file, and the source file is either the original
+    file or a temporary copy file.
 
     Every temporary file has the same suffix as the original file, so
     that file name aware programs can play nicely with it.
 
-    Placed file paths will be properly shell escaped with `\`'s as
-    necessary.
-
     Instead of specifying a whole command line, you can use a command
-    alias defined in a configuration file, `~/.inplace`.  The
-    configuration file syntax is the usual:
-
-    *   Each alias definition is a name/value pair separated with an
-        `=`, one per line.
-
-    *   White spaces at the beginning or the end of a line, and around
-        assignment separators (`=`) are stripped off.
-
-    *   Lines starting with a `#` are ignored.
+    alias defined in a configuration file, `~/.inplace`.  See the
+    FILES section for the file format.
 
     This option can be specified many times, and they will be executed
     in sequence.  A file is only replaced if all of them succeeds.
@@ -146,7 +137,7 @@ The following command line arguments are supported:
     question is on a partition that is fast enough and the system
     temporary directory is slow.
 
-    Another reason to use this switch is when the temporary directory
+    This switch can be effectively used when the temporary directory
     does not have sufficient disk space for a resulted file.
 
     If this option is specified, edited files will have newly assigned
@@ -166,8 +157,9 @@ The following command line arguments are supported:
 *   `--accept-empty`
 
     By default, inplace does not replace the original file when a
-    resulted file is empty in size.  This switch makes it accept empty
-    (zero-sized) output and replace the original file with it.
+    resulted file is empty in size because it is likely that there is
+    a mistake in the filter command.  This switch makes it accept
+    empty (zero-sized) output and replace the original file with it.
 
 ## EXAMPLES
 
@@ -175,8 +167,8 @@ The following command line arguments are supported:
 
         inplace sort file1 file2 file3
 
-    Below is the same thing as above, except for passing input files
-    via the command line argument:
+    Below works the same as above, passing each input file via the
+    command line argument:
 
         inplace 'sort %1 > %2' file1 file2 file3
 
@@ -201,7 +193,15 @@ The following command line arguments are supported:
 
 *   `~/.inplace`
 
-    Location of the configuration file.
+    The configuration file, which syntax is described as follows:
+
+    *   Each alias definition is a name/value pair separated with an
+        `=`, one per line.
+
+    *   White spaces at the beginning or the end of a line, and around
+        assignment separators (`=`) are stripped off.
+
+    *   Lines starting with a `#` are ignored.
 
 ## ENVIRONMENT
 
@@ -238,4 +238,4 @@ latest information and feedback.
 
 ## BUGS
 
-There may be.  Use at your own risk.
+There may always be some bugs.  Use at your own risk.
