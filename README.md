@@ -214,6 +214,12 @@ The following command line arguments are supported:
     and writable, `/tmp` is used.  If `-s` is specified, they will not
     be used.
 
+## HOW TO INSTALL
+
+Just copy `lib/inplace.rb` to `/somewhere/in/your/path/inplace`, or:
+
+        gem install inplace
+
 ## SEE ALSO
 
 [`find(1)`](http://www.freebsd.org/cgi/man.cgi?query=find&sektion=1),
