@@ -6,12 +6,13 @@ BINDIR=		${PREFIX}/bin
 MANPREFIX?=	${PREFIX}
 MANDIR=		${MANPREFIX}/man/man
 
-SCRIPTS=	inplace.rb
-MAN=		inplace.1
+SCRIPTS=	lib/inplace.rb
+MAN=		man/inplace.1
 
 .PATH:	${.CURDIR}/..
+.PHONY:	test
 
 .include <bsd.prog.mk>
 
 test:
-	@${.CURDIR}/test.sh
+	@${.CURDIR}/test/test.sh

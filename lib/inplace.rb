@@ -3,7 +3,7 @@
 #
 # inplace.rb - edits files in-place through given filter commands
 #
-# Copyright (c) 2004, 2005, 2006, 2007, 2008 Akinori MUSHA
+# Copyright (c) 2004, 2005, 2006, 2007, 2008, 2012 Akinori MUSHA
 #
 # All rights reserved.
 #
@@ -28,37 +28,49 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
-# $Idaemons: /home/cvs/inplace/inplace.rb,v 1.7 2004/04/21 13:25:51 knu Exp $
-# $Id$
 
 if RUBY_VERSION < "1.8.2"
   STDERR.puts "Ruby 1.8.2 or later is required."
   exit 255
 end
 
-MYVERSION = "1.2.2"
-MYREVISION = %w$Rev$[1]
-MYDATE = %w$Date$[1]
+module Inplace
+  VERSION = "1.2.2"
+end
+
 MYNAME = File.basename($0)
 
 require "optparse"
 
 def main(argv)
+  $uninterruptible = $interrupt = false
+
+  [:SIGINT, :SIGQUIT, :SIGTERM].each { |sig|
+    trap(sig) {
+      if $uninterruptible
+        $interrupt = true
+      else
+        interrupt
+      end
+    }
+  }
+
   usage = <<-"EOF"
 usage: #{MYNAME} [-Lfinstvz] [-b SUFFIX] COMMANDLINE [file ...]
        #{MYNAME} [-Lfinstvz] [-b SUFFIX] [-e COMMANDLINE] [file ...]
   EOF
 
   banner = <<-"EOF"
-#{MYNAME} - edits files in-place through given filter commands
-  version #{MYVERSION} [revision #{MYREVISION}] (#{MYDATE})
+#{MYNAME} version #{Inplace::VERSION}
+
+Edits files in-place through given filter commands.
 
 #{usage}
   EOF
 
   filters = []
 
-  $config = Config.new
+  $config = Inplace::Config.new
   file = File.expand_path("~/.inplace")
   $config.load(file) if File.exist?(file)
 
@@ -491,7 +503,7 @@ else
   end
 end
 
-class Config
+class Inplace::Config
   def initialize
     @alias = {}
   end
@@ -522,22 +534,10 @@ class Config
   end
 end
 
-$uninterruptible = $interrupt = false
-
 def interrupt
   STDERR.puts "Interrupted."
   exit 130
 end
-
-[:SIGINT, :SIGQUIT, :SIGTERM].each { |sig|
-  trap(sig) {
-    if $uninterruptible
-      $interrupt = true
-    else
-      interrupt
-    end
-  }
-}
 
 def uninterruptible
   orig = $uninterruptible
@@ -550,4 +550,6 @@ ensure
   $uninterruptible = orig
 end
 
-main(ARGV)
+if $0 == __FILE__
+  main(ARGV)
+end

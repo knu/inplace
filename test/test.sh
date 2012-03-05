@@ -7,8 +7,8 @@ flunk () {
     exit 1
 }
 
-srcdir="$(cd "$(dirname "$0")" && pwd)" || exit 1
-testdir=$srcdir/t
+srcdir="$(cd "$(dirname "$0")"/.. && pwd)" || exit 1
+testdir=$srcdir/test/t
 ruby=${RUBY:-$(which ruby)}
 
 while getopts d opt; do
@@ -70,7 +70,7 @@ inplace () {
 
     file="$($ruby -e 'puts ARGV.last' -- "$@")"
     i1="$(inode_of "$file")"
-    $srcdir/inplace.rb $inplace_flags "$@" >/dev/null 2>&1
+    $srcdir/lib/inplace.rb $inplace_flags "$@" >/dev/null 2>&1
     i2="$(inode_of "$file")"
 
     if echo " $inplace_flags" | fgrep -qe " -i"; then
