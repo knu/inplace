@@ -1,7 +1,7 @@
 .\" $Idaemons: /home/cvs/inplace/inplace.1,v 1.8 2004/04/21 13:25:51 knu Exp $
 .\" $Id$
 .\"
-.Dd April 7, 2004
+.Dd November 22, 2012
 .Dt INPLACE 1
 .Os FreeBSD
 .Sh NAME
@@ -251,4 +251,17 @@ is specified, they will not be used.
 .Sh AUTHORS
 .An Akinori MUSHA Aq knu@iDaemons.org
 .Sh BUGS
-There may always be some bugs.  Use at your own risk.
+.Nm
+cannot always preserve timestamps in full precision depending on the
+ruby interpreter and the platform that
+.Nm
+runs on, that is, ruby 1.9 and later supports timestamps in
+nanoseconds but setting file timestamps in nanosecond precision is
+only possible if the platform supports
+.Xr utimensat 2 .
+.Pp
+So, a problem can arise if the file system supports nanoseconds, like
+ext4 and ZFS, but the platform does not have the system call to set
+timestamps in nanoseconds, like Linux < 2.6.22, glibc < 2.6 and
+.Fx ,
+that the sub-microsecond part of a timestamp cannot be preserved.

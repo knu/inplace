@@ -97,12 +97,12 @@ cmp_file () {
 }
 
 cmp_time () {
-    # Since Ruby's File.stat() does not obtain nanosec for the moment,
-    # inplace(1) cannot preserve nanosec values and test(1)'s strict
-    # nanosec-wise check does not pass..
+    # Use ruby to compare timestamps ignoring a sub-microsecond
+    # difference.
+
     #test ! "$1" -nt "$2" -a ! "$2" -nt "$1"
 
-    if $ruby -e 'File.mtime(ARGV[0]) == File.mtime(ARGV[1]) or exit 1' "$1" "$2"; then
+    if $ruby -e 'exit !!ARGV.map{|f|m=File.mtime(f);m.to_a<<m.usec}.uniq!' "$1" "$2"; then
         debug "mtime($1) == mtime($2)"
         return 0
     else
