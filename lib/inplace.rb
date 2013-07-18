@@ -35,7 +35,7 @@ if RUBY_VERSION < "1.8.2"
 end
 
 module Inplace
-  VERSION = "1.2.2"
+  VERSION = "1.2.3"
 end
 
 MYNAME = File.basename($0)
