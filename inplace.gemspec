@@ -10,6 +10,7 @@ Inplace(1) is a command line utility that edits files in-place through
 given filter commands.  e.g. inplace 'sort' file1 file2 file3
   EOS
   gem.homepage      = "https://github.com/knu/inplace"
+  gem.license       = "2-clause BSDL"
 
   gem.files         = `git ls-files`.split("\n")
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
