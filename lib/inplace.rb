@@ -29,11 +29,6 @@
 # SUCH DAMAGE.
 #
 
-if RUBY_VERSION < "1.8.2"
-  STDERR.puts "Ruby 1.8.2 or later is required."
-  exit 255
-end
-
 module Inplace
   VERSION = "1.2.3"
 end
@@ -41,6 +36,7 @@ end
 MYNAME = File.basename($0)
 
 require "optparse"
+require "shellwords"
 
 def main(argv)
   $uninterruptible = $interrupt = false
@@ -462,43 +458,6 @@ class FileFilter
       end
 
       return s
-    end
-  end
-end
-
-if RUBY_VERSION >= "1.8.7"
-  require 'shellwords'
-else
-  class String
-    def shellescape
-      # An empty argument will be skipped, so return empty quotes.
-      return "''" if empty?
-
-      str = dup
-
-      # Process as a single byte sequence because not all shell
-      # implementations are multibyte aware.
-      str.gsub!(/([^A-Za-z0-9_\-.,:\/@\n])/n, "\\\\\\1")
-
-      # A LF cannot be escaped with a backslash because a backslash + LF
-      # combo is regarded as line continuation and simply ignored.
-      str.gsub!(/\n/, "'\n'")
-
-      return str
-    end
-  end
-
-  class Tempfile
-    alias orig_make_tmpname make_tmpname
-
-    def make_tmpname(basename, n)
-      case basename
-      when Array
-        prefix, suffix = *basename
-        make_tmpname(prefix, n) + suffix
-      else
-        orig_make_tmpname(basename, n).tr('.', '-')
-      end
     end
   end
 end
