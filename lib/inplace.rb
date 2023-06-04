@@ -3,7 +3,7 @@
 #
 # inplace.rb - edits files in-place through given filter commands
 #
-# Copyright (c) 2004, 2005, 2006, 2007, 2008, 2012 Akinori MUSHA
+# Copyright (c) 2004-2023 Akinori MUSHA
 #
 # All rights reserved.
 #
@@ -30,7 +30,7 @@
 #
 
 module Inplace
-  VERSION = "1.2.3"
+  VERSION = "1.3.0"
 end
 
 MYNAME = File.basename($0)
