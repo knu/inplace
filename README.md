@@ -103,8 +103,8 @@ The following command line arguments are supported:
     that file name aware programs can play nicely with it.
 
     Instead of specifying a whole command line, you can use a command
-    alias defined in a configuration file, `~/.inplace`.  See the
-    FILES section for the file format.
+    alias defined in a configuration file, `~/.config/inplace/config`
+    or `~/.inplace`.  See the FILES section for the file format.
 
     This option can be specified many times, and they will be executed
     in sequence.  A file is only replaced if all of them succeeds.
@@ -191,7 +191,7 @@ The following command line arguments are supported:
 
 ## FILES
 
-*   `~/.inplace`
+*   `~/.config/inplace/config` or `~/.inplace`
 
     The configuration file, which syntax is described as follows:
 

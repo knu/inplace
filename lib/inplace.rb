@@ -67,8 +67,18 @@ Edits files in-place through given filter commands.
   filters = []
 
   $config = Inplace::Config.new
-  file = File.expand_path("~/.inplace")
-  $config.load(file) if File.exist?(file)
+  [
+    File.join(
+      ENV.fetch("XDG_CONFIG_HOME") { File.expand_path("~/.config") },
+      "inplace/config"
+    ),
+    File.expand_path("~/.inplace"),
+  ].each do |file|
+    if File.exist?(file)
+      $config.load(file)
+      break
+    end
+  end
 
   opts = OptionParser.new(banner, 24) { |opts|
     nextline = "\n" << opts.summary_indent << " " * opts.summary_width << " "
