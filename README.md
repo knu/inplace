@@ -8,9 +8,8 @@ inplace -- edits files in-place through given filter commands
 ## SYNOPSIS
 
 ```
-inplace [-DLfinstvz] [-b suffix] -e commandline [[-e commandline] ...]
-        [file ...]
-inplace [-DLfinstvz] [-b suffix] commandline [file ...]
+inplace [-DLfinstvz] [-b SUFFIX]
+        [[-e] "COMMANDLINE"] [-E COMMAND ... --] [file ...]
 ```
 
 ## DESCRIPTION
@@ -24,8 +23,8 @@ Inode numbers will change by default, but there is a `-i` option with
 which given the inode number of each edited file will be preserved.
 
 As for filter commands, a single command may be specified as the first
-argument to inplace.  To pass many filter commands, specify each
-followed by the `-e` option.
+argument to inplace.  To pass many filter commands, use `-e` or `-E`
+option.
 
 There are some cases where inplace does not replace a file, such as
 when:
@@ -68,6 +67,8 @@ The following command line arguments are supported:
 
 *   `-e COMMANDLINE`
 *   `--execute COMMANDLINE`
+*   `-E COMMAND ... --` / `-E<TERM> COMMAND ... <TERM>`
+*   `--execute-args COMMAND ... --` / `--execute-args=<TERM> COMMAND ... <TERM>`
 
     Specify a filter command line to run for each file in which the
     following placeholders can be used:
@@ -174,17 +175,16 @@ The following command line arguments are supported:
 
 *   Perform in-place charset conversion and newline code conversion:
 
-        inplace -e 'iconv -f EUC-JP -t UTF-8' -e 'perl -pe "s/$/\\r/"'
-        file1 file2 file3
+        inplace -E iconv -f EUC-JP -t UTF-8 -- -E perl -pe 's/$/\r/' -- file1 file2 file3
 
 *   Process image files taking backup files:
 
-        inplace -b.orig 'convert -rotate 270 -resize 50%% %1 %2' *.jpg
+        inplace -b.orig -E convert -rotate 270 -resize 50%% %1 %2 -- *.jpg
 
 *   Perform a mass MP3 tag modification without changing timestamps:
 
-        find mp3/Some_Artist -name '*.mp3' -print0 | xargs -0 inplace
-        -te 'mp3info -a "Some Artist" -g "Progressive Rock" %1'
+        find mp3/Some_Artist -name '*.mp3' -print0 | \
+          xargs -0 inplace -tE mp3info -a "Some Artist" -g "Progressive Rock" %1 --
 
     As you see above, inplace makes a nice combo with find(1) and
     `xargs(1)`.

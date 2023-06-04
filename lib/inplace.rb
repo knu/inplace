@@ -52,8 +52,8 @@ def main(argv)
   }
 
   usage = <<-"EOF"
-usage: #{MYNAME} [-Lfinstvz] [-b SUFFIX] COMMANDLINE [file ...]
-       #{MYNAME} [-Lfinstvz] [-b SUFFIX] [-e COMMANDLINE] [file ...]
+usage: #{MYNAME} [-Lfinstvz] [-b SUFFIX]
+                 [-e "COMMANDLINE"] [-E COMMAND ... --] [file ...]
   EOF
 
   banner = <<-"EOF"
@@ -119,6 +119,29 @@ Edits files in-place through given filter commands.
       |s| filters << FileFilter.new($config.expand_alias(s))
     }
 
+    opts.on("-E", "--execute-args[=TERM]",
+      "Run COMMAND with all following arguments until TERM" << nextline <<
+      "(default: '--') is encountered." << nextline <<
+      "This is similar to -e except it takes a list of" << nextline <<
+      "arguments.") { |s|
+      term = s || '--'
+      args = []
+      until (arg = argv.shift) == term
+        raise "-E must end with #{term}" if arg.nil?
+
+        args << arg
+      end
+      commandline = args.map { |arg|
+        case arg
+        when /%/
+          arg.gsub(/[^A-Za-z0-9_\-.,:+\/@\n%]/, "\\\\\\&").gsub(/\n/, "'\n'")
+        else
+          arg.shellescape
+        end
+      }.join(' ')
+      filters << FileFilter.new($config.expand_alias(commandline))
+    }
+
     opts.on("-f", "--force",
       "Force editing even if a file is read-only.") {
       |b| $force = b
@@ -158,7 +181,9 @@ Edits files in-place through given filter commands.
 
   setup()
 
-  files = opts.order(*argv)
+  argv = argv.dup
+  opts.order!(argv)
+  files = argv
 
   if filters.empty? && !files.empty?
     filters << FileFilter.new($config.expand_alias(files.shift))
@@ -228,6 +253,8 @@ require 'pathname'
 
 class FileFilter
   def initialize(template)
+    raise ArgumentError, "empty command" if template.empty?
+
     @formatter = Formatter.new(template)
   end
 
