@@ -81,6 +81,7 @@ Edits files in-place through given filter commands.
   end
 
   opts = OptionParser.new(banner, 24) { |opts|
+    opts.version = Inplace::VERSION
     nextline = "\n" << opts.summary_indent << " " * opts.summary_width << " "
 
     opts.on("-h", "--help",
