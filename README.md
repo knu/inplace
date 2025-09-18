@@ -216,9 +216,17 @@ The following command line arguments are supported:
 
 ## HOW TO INSTALL
 
-Just copy `lib/inplace.rb` to `/somewhere/in/your/path/inplace`, or:
+### Via Homebrew (macOS/Linux)
+
+        brew install knu/knu/inplace
+
+### Via RubyGems
 
         gem install inplace
+
+### Manual Installation
+
+Just copy `lib/inplace.rb` to `/somewhere/in/your/path/inplace`.
 
 ## SEE ALSO
 
