@@ -216,6 +216,14 @@ The following command line arguments are supported:
 
 ## HOW TO INSTALL
 
+Install with [mise](https://mise.jdx.dev/):
+
+```sh
+mise use -g github:knu/inplace@latest
+```
+
+Ruby must be available on your `PATH`.
+
 ### Via Homebrew (macOS/Linux)
 
         brew install knu/knu/inplace

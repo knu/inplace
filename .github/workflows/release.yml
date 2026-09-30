@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check release asset
+        run: |
+          test -x lib/inplace.rb
+          ruby -c lib/inplace.rb
+          ruby lib/inplace.rb --version
+          test/test.sh
+
+      - name: Package release
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          package_dir=$(mktemp -d "$RUNNER_TEMP/package.XXXXXX")
+          mkdir -p "$package_dir/bin"
+          install -m 755 lib/inplace.rb "$package_dir/bin/inplace"
+          cp LICENSE "$package_dir/LICENSE"
+          mkdir -p "$package_dir/share/man/man1"
+          install -m 644 man/inplace.1 "$package_dir/share/man/man1/inplace.1"
+          tar -czf "$RUNNER_TEMP/inplace-${TAG#v}.tar.gz" -C "$package_dir" bin LICENSE share
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" "$RUNNER_TEMP/inplace-${TAG#v}.tar.gz" --verify-tag --generate-notes
